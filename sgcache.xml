@@ -21,6 +21,7 @@
     <files>
         <folder plugin="sgcache">services</folder>
         <folder>src</folder>
+        <folder>tmpl</folder>
     </files>
 
     <languages>
@@ -28,7 +29,7 @@
         <language tag="en-GB">language/en-GB/plg_system_sgcache.sys.ini</language>
     </languages>
 
-    <changelogurl>https://raw.githubusercontent.com/cybersalt/cs-siteground-cache-plugin-for-joomla/main/CHANGELOG.html</changelogurl>
+    <changelogurl>https://raw.githubusercontent.com/cybersalt/cs-siteground-cache-for-joomla/main/CHANGELOG.html</changelogurl>
 
     <config>
         <fields name="params">
@@ -122,6 +123,61 @@
                     rows="5"
                     filter="raw"
                     showon="show_toolbar_button:1[AND]toolbar_button_mode:dropdown"
+                />
+            </fieldset>
+
+            <fieldset name="logging" label="PLG_SYSTEM_SGCACHE_FIELDSET_LOGGING">
+                <field
+                    name="enable_logging"
+                    type="radio"
+                    label="PLG_SYSTEM_SGCACHE_ENABLE_LOGGING"
+                    description="PLG_SYSTEM_SGCACHE_ENABLE_LOGGING_DESC"
+                    default="0"
+                    class="btn-group"
+                    layout="joomla.form.field.radio.switcher"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
+                <field
+                    name="enable_debug"
+                    type="radio"
+                    label="PLG_SYSTEM_SGCACHE_ENABLE_DEBUG"
+                    description="PLG_SYSTEM_SGCACHE_ENABLE_DEBUG_DESC"
+                    default="0"
+                    class="btn-group"
+                    layout="joomla.form.field.radio.switcher"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
+                <field
+                    name="log_file"
+                    type="text"
+                    label="PLG_SYSTEM_SGCACHE_LOG_FILE"
+                    description="PLG_SYSTEM_SGCACHE_LOG_FILE_DESC"
+                    default="sgcache.log"
+                    showon="enable_logging:1"
+                />
+
+                <field
+                    name="max_log_size"
+                    type="number"
+                    label="PLG_SYSTEM_SGCACHE_MAX_LOG_SIZE"
+                    description="PLG_SYSTEM_SGCACHE_MAX_LOG_SIZE_DESC"
+                    default="5"
+                    min="1"
+                    max="50"
+                    showon="enable_logging:1"
+                />
+
+                <field
+                    name="log_viewer"
+                    type="logviewerbutton"
+                    label="PLG_SYSTEM_SGCACHE_LOG_VIEWER"
+                    description="PLG_SYSTEM_SGCACHE_LOG_VIEWER_DESC"
                 />
             </fieldset>
 

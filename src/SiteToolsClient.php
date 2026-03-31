@@ -50,6 +50,11 @@ class SiteToolsClient
      */
     public static function flushDynamicCache(string $hostname, string $path): bool
     {
+        Logger::info('flush_request', [
+            'hostname' => $hostname,
+            'path'     => $path,
+        ]);
+
         $args = [
             'api'      => 'domain-all',
             'cmd'      => 'update',
@@ -64,12 +69,29 @@ class SiteToolsClient
         $result = self::callSiteToolsClient($args);
 
         if ($result === false) {
+            Logger::error('flush_failed', [
+                'hostname' => $hostname,
+                'path'     => $path,
+                'reason'   => 'Socket call returned false',
+            ]);
             return false;
         }
 
         if (isset($result['err_code'])) {
+            Logger::error('flush_error', [
+                'hostname'  => $hostname,
+                'path'      => $path,
+                'err_code'  => $result['err_code'],
+                'err_msg'   => $result['err_msg'] ?? '',
+            ]);
             return false;
         }
+
+        Logger::info('flush_success', [
+            'hostname' => $hostname,
+            'path'     => $path,
+            'response' => $result,
+        ]);
 
         return true;
     }
@@ -84,8 +106,14 @@ class SiteToolsClient
     private static function callSiteToolsClient(array $args): array|false
     {
         if (!file_exists(self::SOCKET_PATH)) {
+            Logger::warning('socket_missing', [
+                'path' => self::SOCKET_PATH,
+                'note' => 'Not running on SiteGround',
+            ]);
             return false;
         }
+
+        Logger::debug('socket_connect', ['path' => self::SOCKET_PATH]);
 
         $fp = @stream_socket_client(
             'unix://' . self::SOCKET_PATH,
@@ -95,6 +123,11 @@ class SiteToolsClient
         );
 
         if ($fp === false) {
+            Logger::error('socket_connect_failed', [
+                'path'   => self::SOCKET_PATH,
+                'errno'  => $errno,
+                'errstr' => $errstr,
+            ]);
             return false;
         }
 
@@ -105,6 +138,8 @@ class SiteToolsClient
             'settings' => $args['settings'],
         ]);
 
+        Logger::debug('socket_send', ['request' => $request]);
+
         fwrite($fp, $request . "\n");
 
         $response = fgets($fp, 32 * 1024);
@@ -112,12 +147,16 @@ class SiteToolsClient
         fclose($fp);
 
         if (empty($response)) {
+            Logger::error('socket_empty_response', ['request' => $request]);
             return false;
         }
+
+        Logger::debug('socket_response', ['response' => $response]);
 
         $decoded = @json_decode($response, true);
 
         if (!\is_array($decoded)) {
+            Logger::error('socket_invalid_json', ['response' => $response]);
             return false;
         }
 
