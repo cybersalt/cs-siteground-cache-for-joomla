@@ -1,0 +1,45 @@
+                    GNU GENERAL PUBLIC LICENSE
+                       Version 2, June 1991
+
+ Copyright (C) 1989, 1991 Free Software Foundation, Inc.,
+ 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+For the full text of the GNU General Public License version 2, see:
+https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+
+This plugin is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or (at your
+option) any later version.
+
+This plugin is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+---
+
+ATTRIBUTION
+
+The SiteGround server communication protocol used by this plugin was
+learned by studying SiteGround's "Speed Optimizer" plugin for WordPress
+(formerly "SG CachePress"), which is published under the GNU General
+Public License version 3 (GPLv3) by SiteGround (https://siteground.com).
+
+The WordPress plugin source was reviewed via the community mirror at:
+https://github.com/WordpressPluginDirectory/sg-cachepress
+
+No code was copied from the WordPress plugin into this Joomla plugin.
+This implementation was written from scratch using the Joomla extension
+API, informed by an understanding of how SiteGround's caching daemon
+accepts purge requests via its UNIX domain socket interface.
+
+This use is permitted under the GPL, which guarantees the freedom to
+study how a program works and adapt it for your own purposes
+(GPL Freedom 1).
+
+SiteGround and Speed Optimizer are trademarks of SiteGround.
+This plugin is not affiliated with, endorsed by, or sponsored by
+SiteGround.

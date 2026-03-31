@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="plugin" group="system" method="upgrade">
+    <name>PLG_SYSTEM_SGCACHE</name>
+    <version>1.0.0</version>
+    <creationDate>2026-03-30</creationDate>
+    <author>Cybersalt</author>
+    <authorEmail>support@cybersalt.com</authorEmail>
+    <authorUrl>https://cybersalt.com</authorUrl>
+    <copyright>Copyright (C) 2026 Cybersalt. All rights reserved.</copyright>
+    <license>GNU General Public License version 2 or later</license>
+    <description>PLG_SYSTEM_SGCACHE_DESCRIPTION
+        &lt;br/&gt;&lt;br/&gt;
+        &lt;small&gt;Cache communication protocol learned from SiteGround's
+        &lt;a href="https://wordpress.org/plugins/sg-cachepress/"&gt;Speed Optimizer&lt;/a&gt;
+        plugin for WordPress (GPLv3). No code was copied; this is an independent
+        Joomla implementation. Not affiliated with or endorsed by SiteGround.&lt;/small&gt;
+    </description>
+    <namespace path="src">Cybersalt\Plugin\System\SgCache</namespace>
+    <scriptfile>script.php</scriptfile>
+
+    <files>
+        <folder plugin="sgcache">services</folder>
+        <folder>src</folder>
+    </files>
+
+    <languages>
+        <language tag="en-GB">language/en-GB/plg_system_sgcache.ini</language>
+        <language tag="en-GB">language/en-GB/plg_system_sgcache.sys.ini</language>
+    </languages>
+
+    <changelogurl>https://raw.githubusercontent.com/cybersalt/cs-siteground-cache-plugin-for-joomla/main/CHANGELOG.html</changelogurl>
+
+    <config>
+        <fields name="params">
+            <fieldset name="basic" label="PLG_SYSTEM_SGCACHE_FIELDSET_CACHE">
+                <field
+                    name="enable_dynamic_cache"
+                    type="radio"
+                    label="PLG_SYSTEM_SGCACHE_ENABLE_DYNAMIC_CACHE"
+                    description="PLG_SYSTEM_SGCACHE_ENABLE_DYNAMIC_CACHE_DESC"
+                    default="1"
+                    class="btn-group"
+                    layout="joomla.form.field.radio.switcher"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
+                <field
+                    name="enable_autoflush"
+                    type="radio"
+                    label="PLG_SYSTEM_SGCACHE_ENABLE_AUTOFLUSH"
+                    description="PLG_SYSTEM_SGCACHE_ENABLE_AUTOFLUSH_DESC"
+                    default="1"
+                    class="btn-group"
+                    layout="joomla.form.field.radio.switcher"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
+                <field
+                    name="purge_threshold"
+                    type="number"
+                    label="PLG_SYSTEM_SGCACHE_PURGE_THRESHOLD"
+                    description="PLG_SYSTEM_SGCACHE_PURGE_THRESHOLD_DESC"
+                    default="10"
+                    min="1"
+                    max="100"
+                />
+
+                <field
+                    name="excluded_urls"
+                    type="textarea"
+                    label="PLG_SYSTEM_SGCACHE_EXCLUDED_URLS"
+                    description="PLG_SYSTEM_SGCACHE_EXCLUDED_URLS_DESC"
+                    rows="5"
+                    filter="raw"
+                />
+
+                <field
+                    name="excluded_components"
+                    type="textarea"
+                    label="PLG_SYSTEM_SGCACHE_EXCLUDED_COMPONENTS"
+                    description="PLG_SYSTEM_SGCACHE_EXCLUDED_COMPONENTS_DESC"
+                    rows="3"
+                    filter="raw"
+                />
+            </fieldset>
+
+            <fieldset name="toolbar" label="PLG_SYSTEM_SGCACHE_FIELDSET_TOOLBAR">
+                <field
+                    name="show_toolbar_button"
+                    type="radio"
+                    label="PLG_SYSTEM_SGCACHE_SHOW_TOOLBAR_BUTTON"
+                    description="PLG_SYSTEM_SGCACHE_SHOW_TOOLBAR_BUTTON_DESC"
+                    default="1"
+                    class="btn-group"
+                    layout="joomla.form.field.radio.switcher"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
+                <field
+                    name="toolbar_button_mode"
+                    type="list"
+                    label="PLG_SYSTEM_SGCACHE_TOOLBAR_BUTTON_MODE"
+                    description="PLG_SYSTEM_SGCACHE_TOOLBAR_BUTTON_MODE_DESC"
+                    default="all"
+                    showon="show_toolbar_button:1"
+                >
+                    <option value="all">PLG_SYSTEM_SGCACHE_TOOLBAR_MODE_ALL</option>
+                    <option value="dropdown">PLG_SYSTEM_SGCACHE_TOOLBAR_MODE_DROPDOWN</option>
+                </field>
+
+                <field
+                    name="toolbar_purge_paths"
+                    type="textarea"
+                    label="PLG_SYSTEM_SGCACHE_TOOLBAR_PURGE_PATHS"
+                    description="PLG_SYSTEM_SGCACHE_TOOLBAR_PURGE_PATHS_DESC"
+                    rows="5"
+                    filter="raw"
+                    showon="show_toolbar_button:1[AND]toolbar_button_mode:dropdown"
+                />
+            </fieldset>
+
+            <fieldset name="advanced" label="PLG_SYSTEM_SGCACHE_FIELDSET_ADVANCED">
+                <field
+                    name="vary_user_agent"
+                    type="radio"
+                    label="PLG_SYSTEM_SGCACHE_VARY_USER_AGENT"
+                    description="PLG_SYSTEM_SGCACHE_VARY_USER_AGENT_DESC"
+                    default="0"
+                    class="btn-group"
+                    layout="joomla.form.field.radio.switcher"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
+                <field
+                    name="cache_logged_in"
+                    type="radio"
+                    label="PLG_SYSTEM_SGCACHE_CACHE_LOGGED_IN"
+                    description="PLG_SYSTEM_SGCACHE_CACHE_LOGGED_IN_DESC"
+                    default="0"
+                    class="btn-group"
+                    layout="joomla.form.field.radio.switcher"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
+                <field
+                    name="purge_button"
+                    type="purgebutton"
+                    label="PLG_SYSTEM_SGCACHE_PURGE_BUTTON"
+                    description="PLG_SYSTEM_SGCACHE_PURGE_BUTTON_DESC"
+                />
+            </fieldset>
+        </fields>
+    </config>
+</extension>
