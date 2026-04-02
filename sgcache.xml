@@ -26,7 +26,7 @@
     <changelogurl>https://raw.githubusercontent.com/cybersalt/cs-siteground-cache-for-joomla/main/CHANGELOG.html</changelogurl>
 
     <config>
-        <fields name="params">
+        <fields name="params" addfieldprefix="Cybersalt\Plugin\System\SgCache\Field">
             <fieldset name="basic" label="PLG_SYSTEM_SGCACHE_FIELDSET_CACHE">
                 <field
                     name="enable_dynamic_cache"
