@@ -250,38 +250,42 @@ class SgCache extends CMSPlugin implements SubscriberInterface
             return;
         }
 
-        // -- Frontend: skip cache headers if not on SiteGround --
+        // -- Frontend: set cache headers --
+
+        $currentUrl = Uri::getInstance()->toString(['path']);
 
         if (!SiteToolsClient::isSiteGround()) {
+            Logger::debug('frontend_request', ['url' => $currentUrl, 'cache' => 'skipped', 'reason' => 'not_siteground']);
             return;
         }
 
         if (!$this->params->get('enable_dynamic_cache', 1)) {
+            Logger::debug('frontend_request', ['url' => $currentUrl, 'cache' => 'disabled']);
             return;
         }
 
         $user = $app->getIdentity();
         if ($user && !$user->guest && !$this->params->get('cache_logged_in', 0)) {
-            Logger::info('cache_bypass', ['reason' => 'logged_in_user']);
+            Logger::info('frontend_request', ['url' => $currentUrl, 'cache' => 'bypass', 'reason' => 'logged_in_user']);
             $app->setHeader('X-Cache-Enabled', 'False', true);
             return;
         }
 
-        $currentPath = Uri::getInstance()->getPath();
-        if ($this->isUrlExcluded($currentPath)) {
-            Logger::info('cache_bypass', ['reason' => 'url_excluded', 'path' => $currentPath]);
+        if ($this->isUrlExcluded($currentUrl)) {
+            Logger::info('frontend_request', ['url' => $currentUrl, 'cache' => 'bypass', 'reason' => 'url_excluded']);
             $app->setHeader('X-Cache-Enabled', 'False', true);
             return;
         }
 
         $option = $app->input->get('option', '');
         if ($this->isComponentExcluded($option)) {
-            Logger::info('cache_bypass', ['reason' => 'component_excluded', 'component' => $option]);
+            Logger::info('frontend_request', ['url' => $currentUrl, 'cache' => 'bypass', 'reason' => 'component_excluded', 'component' => $option]);
             $app->setHeader('X-Cache-Enabled', 'False', true);
             return;
         }
 
-        // Normal cache-enabled response — only log to debug panel, not to file
+        // Cache enabled for this page
+        Logger::info('frontend_request', ['url' => $currentUrl, 'cache' => 'enabled']);
         $app->setHeader('X-Cache-Enabled', 'True', true);
 
         if ($this->params->get('vary_user_agent', 0)) {
@@ -935,14 +939,18 @@ class SgCache extends CMSPlugin implements SubscriberInterface
             return false;
         }
 
-        $excluded = $this->params->get('excluded_components', '');
+        $excluded = $this->params->get('excluded_components', []);
+
+        // Handle both array (fancy-select) and legacy string (textarea) formats
+        if (\is_string($excluded)) {
+            $excluded = array_filter(array_map('trim', explode("\n", $excluded)));
+        }
+
         if (empty($excluded)) {
             return false;
         }
 
-        $lines = array_filter(array_map('trim', explode("\n", $excluded)));
-
-        return \in_array($option, $lines, true);
+        return \in_array($option, (array) $excluded, true);
     }
 
     /**
