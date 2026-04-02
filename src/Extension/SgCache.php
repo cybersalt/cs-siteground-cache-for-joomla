@@ -249,26 +249,26 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
         $user = $app->getIdentity();
         if ($user && !$user->guest && !$this->params->get('cache_logged_in', 0)) {
-            Logger::debug('header_set', ['X-Cache-Enabled' => 'False', 'reason' => 'logged_in_user']);
+            Logger::info('cache_bypass', ['reason' => 'logged_in_user']);
             $app->setHeader('X-Cache-Enabled', 'False', true);
             return;
         }
 
         $currentPath = Uri::getInstance()->getPath();
         if ($this->isUrlExcluded($currentPath)) {
-            Logger::debug('header_set', ['X-Cache-Enabled' => 'False', 'reason' => 'url_excluded', 'path' => $currentPath]);
+            Logger::info('cache_bypass', ['reason' => 'url_excluded', 'path' => $currentPath]);
             $app->setHeader('X-Cache-Enabled', 'False', true);
             return;
         }
 
         $option = $app->input->get('option', '');
         if ($this->isComponentExcluded($option)) {
-            Logger::debug('header_set', ['X-Cache-Enabled' => 'False', 'reason' => 'component_excluded', 'component' => $option]);
+            Logger::info('cache_bypass', ['reason' => 'component_excluded', 'component' => $option]);
             $app->setHeader('X-Cache-Enabled', 'False', true);
             return;
         }
 
-        Logger::debug('header_set', ['X-Cache-Enabled' => 'True']);
+        // Normal cache-enabled response — only log to debug panel, not to file
         $app->setHeader('X-Cache-Enabled', 'True', true);
 
         if ($this->params->get('vary_user_agent', 0)) {

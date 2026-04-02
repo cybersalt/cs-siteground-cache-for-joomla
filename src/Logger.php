@@ -96,7 +96,7 @@ class Logger
         $entry = [
             'timestamp'  => date('Y-m-d H:i:s.') . substr(microtime(), 2, 4),
             'request_id' => self::$requestId,
-            'elapsed_ms' => (float) number_format((microtime(true) - self::$requestStart) * 1000, 1, '.', ''),
+            'elapsed_ms' => (int) round((microtime(true) - self::$requestStart) * 1000),
             'level'      => $level,
             'event'      => $event,
             'data'       => $data,
