@@ -339,11 +339,15 @@ class SgCache extends CMSPlugin implements SubscriberInterface
     private function buildSimpleToolbarButton(string $ajaxUrl, string $label): string
     {
         return <<<HTML
-        <div class="header-item d-flex align-items-center" id="sgcache-toolbar-wrapper">
-            <button type="button" id="sgcache-toolbar-btn" class="header-item-content" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($label)}">
-                <span class="icon-trash" aria-hidden="true"></span>
-                <span class="sgcache-label d-none d-md-inline">{$this->esc($label)}</span>
-            </button>
+        <div class="header-item" id="sgcache-toolbar-wrapper">
+            <a href="javascript:" id="sgcache-toolbar-btn" class="header-item-content" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($label)}">
+                <div class="header-item-icon">
+                    <span class="icon-trash" aria-hidden="true"></span>
+                </div>
+                <div class="header-item-text sgcache-label">
+                    {$this->esc($label)}
+                </div>
+            </a>
         </div>
         HTML;
     }
@@ -361,12 +365,16 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         }
 
         return <<<HTML
-        <div class="header-item d-flex align-items-center" id="sgcache-toolbar-wrapper">
+        <div class="header-item" id="sgcache-toolbar-wrapper">
             <div class="btn-group">
-                <button type="button" id="sgcache-toolbar-btn" class="header-item-content" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($purgeAllLabel)}">
-                    <span class="icon-trash" aria-hidden="true"></span>
-                    <span class="sgcache-label d-none d-md-inline">{$this->esc($label)}</span>
-                </button>
+                <a href="javascript:" id="sgcache-toolbar-btn" class="header-item-content" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($purgeAllLabel)}">
+                    <div class="header-item-icon">
+                        <span class="icon-trash" aria-hidden="true"></span>
+                    </div>
+                    <div class="header-item-text sgcache-label">
+                        {$this->esc($label)}
+                    </div>
+                </a>
                 <button type="button" class="header-item-content dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                     <span class="visually-hidden">Toggle Dropdown</span>
                 </button>
@@ -392,7 +400,7 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         function sgcacheToolbarPurge(pathOrAll) {
             var btn = document.getElementById('sgcache-toolbar-btn');
             var label = btn.querySelector('.sgcache-label');
-            var origText = label ? label.textContent : '';
+            var origText = label ? label.textContent.trim() : '';
             btn.style.opacity = '0.6';
             btn.style.pointerEvents = 'none';
             if (label) label.textContent = '{$purgingMsg}';
