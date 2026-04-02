@@ -8,13 +8,7 @@
     <authorUrl>https://cybersalt.com</authorUrl>
     <copyright>Copyright (C) 2026 Cybersalt. All rights reserved.</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <description>PLG_SYSTEM_SGCACHE_DESCRIPTION
-        &lt;br/&gt;&lt;br/&gt;
-        &lt;small&gt;Cache communication protocol learned from SiteGround's
-        &lt;a href="https://wordpress.org/plugins/sg-cachepress/"&gt;Speed Optimizer&lt;/a&gt;
-        plugin for WordPress (GPLv3). No code was copied; this is an independent
-        Joomla implementation. Not affiliated with or endorsed by SiteGround.&lt;/small&gt;
-    </description>
+    <description>PLG_SYSTEM_SGCACHE_DESCRIPTION</description>
     <namespace path="src">Cybersalt\Plugin\System\SgCache</namespace>
     <scriptfile>script.php</scriptfile>
 
