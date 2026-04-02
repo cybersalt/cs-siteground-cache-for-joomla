@@ -135,6 +135,20 @@
                 </field>
 
                 <field
+                    name="verbose_logging"
+                    type="radio"
+                    label="PLG_SYSTEM_SGCACHE_VERBOSE_LOGGING"
+                    description="PLG_SYSTEM_SGCACHE_VERBOSE_LOGGING_DESC"
+                    default="0"
+                    class="btn-group"
+                    layout="joomla.form.field.radio.switcher"
+                    showon="enable_logging:1"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
+                <field
                     name="enable_debug"
                     type="radio"
                     label="PLG_SYSTEM_SGCACHE_ENABLE_DEBUG"

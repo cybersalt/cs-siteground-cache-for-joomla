@@ -79,14 +79,11 @@ class SgCache extends CMSPlugin implements SubscriberInterface
     {
         $this->initLogger();
 
-        // Load our language files early so toolbar button/notice strings
-        // are available on all admin pages (not just plugin settings)
+        // Load our language files on all admin pages so toolbar button,
+        // purge messages, and non-SiteGround notice strings are available
         $app = $this->getApplication();
         if ($app->isClient('administrator')) {
-            $lang = $app->getLanguage();
-            $basePath = JPATH_PLUGINS . '/system/sgcache';
-            $lang->load('plg_system_sgcache.sys', $basePath);
-            $lang->load('plg_system_sgcache', $basePath);
+            $this->loadLanguage();
         }
     }
 
@@ -257,14 +254,19 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         // -- Frontend: set cache headers --
 
         $currentUrl = Uri::getInstance()->toString(['path']);
+        $verbose = (bool) $this->params->get('verbose_logging', 0);
 
         if (!SiteToolsClient::isSiteGround()) {
-            Logger::debug('frontend_request', ['url' => $currentUrl, 'cache' => 'skipped', 'reason' => 'not_siteground']);
+            if ($verbose) {
+                Logger::debug('frontend_request', ['url' => $currentUrl, 'cache' => 'skipped', 'reason' => 'not_siteground']);
+            }
             return;
         }
 
         if (!$this->params->get('enable_dynamic_cache', 1)) {
-            Logger::debug('frontend_request', ['url' => $currentUrl, 'cache' => 'disabled']);
+            if ($verbose) {
+                Logger::debug('frontend_request', ['url' => $currentUrl, 'cache' => 'disabled']);
+            }
             return;
         }
 
@@ -288,8 +290,10 @@ class SgCache extends CMSPlugin implements SubscriberInterface
             return;
         }
 
-        // Cache enabled for this page
-        Logger::info('frontend_request', ['url' => $currentUrl, 'cache' => 'enabled']);
+        // Cache enabled for this page — only log in verbose mode
+        if ($verbose) {
+            Logger::info('frontend_request', ['url' => $currentUrl, 'cache' => 'enabled']);
+        }
         $app->setHeader('X-Cache-Enabled', 'True', true);
 
         if ($this->params->get('vary_user_agent', 0)) {
