@@ -93,12 +93,12 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         Logger::init((bool) $enableLogging, $logFile, $maxSize);
         $this->loggerReady = true;
 
-        Logger::debug('plugin_init', [
-            'siteground'  => SiteToolsClient::isSiteGround(),
-            'autoflush'   => (bool) $this->params->get('enable_autoflush', 1),
-            'cache_headers' => (bool) $this->params->get('enable_dynamic_cache', 1),
-            'debug_panel' => (bool) $this->params->get('enable_debug', 0),
-        ]);
+        // Skip logging our own AJAX requests (log viewer, stats, etc.)
+        $app = $this->getApplication();
+        if ($app->input->get('option') === 'com_ajax' && $app->input->get('plugin') === 'sgcache') {
+            Logger::suppress();
+            return;
+        }
     }
 
     // ------------------------------------------------------------------

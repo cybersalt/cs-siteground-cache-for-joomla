@@ -53,6 +53,11 @@ class Logger
     private static int $maxSize = 5242880; // 5 MB
 
     /**
+     * Whether logging is suppressed for this request (e.g. our own AJAX calls).
+     */
+    private static bool $suppressed = false;
+
+    /**
      * Initialize the logger for this request.
      */
     public static function init(bool $enabled, string $logFile = '', int $maxSizeMb = 5): void
@@ -71,6 +76,15 @@ class Logger
     }
 
     /**
+     * Suppress file logging for this request (e.g. our own AJAX calls).
+     * Debug panel entries are still buffered in memory.
+     */
+    public static function suppress(): void
+    {
+        self::$suppressed = true;
+    }
+
+    /**
      * Log an event.
      *
      * @param string $event   Event name (e.g. 'purge_url', 'set_header', 'socket_send')
@@ -82,7 +96,7 @@ class Logger
         $entry = [
             'timestamp'  => date('Y-m-d H:i:s.') . substr(microtime(), 2, 4),
             'request_id' => self::$requestId,
-            'elapsed_ms' => round((microtime(true) - self::$requestStart) * 1000, 2),
+            'elapsed_ms' => (float) number_format((microtime(true) - self::$requestStart) * 1000, 1, '.', ''),
             'level'      => $level,
             'event'      => $event,
             'data'       => $data,
@@ -91,8 +105,8 @@ class Logger
         // Always buffer for debug panel
         self::$requestEntries[] = $entry;
 
-        // Write to file if logging is enabled
-        if (!self::$enabled || empty(self::$logFile)) {
+        // Write to file if logging is enabled and not suppressed
+        if (!self::$enabled || empty(self::$logFile) || self::$suppressed) {
             return;
         }
 
