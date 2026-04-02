@@ -100,11 +100,14 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         Logger::init((bool) $enableLogging, $logFile, $maxSize);
         $this->loggerReady = true;
 
-        // Skip logging our own AJAX requests (log viewer, stats, etc.)
+        // Skip logging our own log viewer AJAX requests (not purge actions)
         $app = $this->getApplication();
         if ($app->input->get('option') === 'com_ajax' && $app->input->get('plugin') === 'sgcache') {
-            Logger::suppress();
-            return;
+            $action = $app->input->get('action', '');
+            if ($action !== 'purge') {
+                Logger::suppress();
+                return;
+            }
         }
     }
 
