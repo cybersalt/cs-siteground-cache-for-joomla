@@ -107,7 +107,7 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     public function onContentAfterSave(Event $event): void
     {
-        if (!$this->params->get('enable_autoflush', 1)) {
+        if (!$this->params->get('enable_autoflush', 1) || !SiteToolsClient::isSiteGround()) {
             return;
         }
 
@@ -131,7 +131,7 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     public function onContentAfterDelete(Event $event): void
     {
-        if (!$this->params->get('enable_autoflush', 1)) {
+        if (!$this->params->get('enable_autoflush', 1) || !SiteToolsClient::isSiteGround()) {
             return;
         }
 
@@ -148,7 +148,7 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     public function onContentChangeState(Event $event): void
     {
-        if (!$this->params->get('enable_autoflush', 1)) {
+        if (!$this->params->get('enable_autoflush', 1) || !SiteToolsClient::isSiteGround()) {
             return;
         }
 
@@ -177,7 +177,7 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     public function onCategoryChangeState(Event $event): void
     {
-        if (!$this->params->get('enable_autoflush', 1)) {
+        if (!$this->params->get('enable_autoflush', 1) || !SiteToolsClient::isSiteGround()) {
             return;
         }
 
@@ -187,7 +187,7 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     public function onCategoryAfterSave(Event $event): void
     {
-        if (!$this->params->get('enable_autoflush', 1)) {
+        if (!$this->params->get('enable_autoflush', 1) || !SiteToolsClient::isSiteGround()) {
             return;
         }
 
@@ -197,7 +197,7 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     public function onCategoryAfterDelete(Event $event): void
     {
-        if (!$this->params->get('enable_autoflush', 1)) {
+        if (!$this->params->get('enable_autoflush', 1) || !SiteToolsClient::isSiteGround()) {
             return;
         }
 
@@ -211,7 +211,7 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     public function purgeEverything(Event $event): void
     {
-        if (!$this->params->get('enable_autoflush', 1)) {
+        if (!$this->params->get('enable_autoflush', 1) || !SiteToolsClient::isSiteGround()) {
             return;
         }
 
@@ -231,6 +231,9 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         $app = $this->getApplication();
 
         if ($app->isClient('administrator')) {
+            if (!SiteToolsClient::isSiteGround()) {
+                $this->injectNonSiteGroundNotice();
+            }
             $this->injectAdminToolbarButton();
             $this->detectTemplateEditorSave();
             $this->injectDebugPanel();
@@ -241,7 +244,11 @@ class SgCache extends CMSPlugin implements SubscriberInterface
             return;
         }
 
-        // -- Frontend: set cache headers --
+        // -- Frontend: skip cache headers if not on SiteGround --
+
+        if (!SiteToolsClient::isSiteGround()) {
+            return;
+        }
 
         if (!$this->params->get('enable_dynamic_cache', 1)) {
             return;
@@ -424,6 +431,47 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         }
         </script>
         HTML;
+    }
+
+    // ------------------------------------------------------------------
+    // Non-SiteGround admin notice
+    // ------------------------------------------------------------------
+
+    private function injectNonSiteGroundNotice(): void
+    {
+        $app = $this->getApplication();
+        $user = $app->getIdentity();
+
+        if (!$user || !$user->authorise('core.manage')) {
+            return;
+        }
+
+        $body = $app->getBody();
+
+        if (str_contains($body, 'sgcache-sg-notice')) {
+            return;
+        }
+
+        $message = Text::_('PLG_SYSTEM_SGCACHE_NOT_SITEGROUND_NOTICE');
+        $settingsUrl = 'index.php?option=com_plugins&view=plugins&filter[search]=SiteGround%20Cache';
+        $settingsLabel = Text::_('PLG_SYSTEM_SGCACHE_GO_TO_SETTINGS');
+
+        $notice = <<<HTML
+        <div id="sgcache-sg-notice" class="alert alert-warning d-flex align-items-center gap-2" style="margin:10px 20px 0;border-radius:6px;">
+            <span class="icon-warning-circle" aria-hidden="true" style="font-size:18px;"></span>
+            <div style="flex:1;">
+                <strong>SiteGround Cache:</strong> {$this->esc($message)}
+            </div>
+            <a href="{$settingsUrl}" class="btn btn-sm btn-warning">{$this->esc($settingsLabel)}</a>
+        </div>
+        HTML;
+
+        // Inject after the <header> closing tag so it appears below the header bar
+        if (str_contains($body, '</header>')) {
+            $body = preg_replace('/<\/header>/', '</header>' . $notice, $body, 1);
+        }
+
+        $app->setBody($body);
     }
 
     // ------------------------------------------------------------------
