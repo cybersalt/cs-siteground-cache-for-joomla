@@ -16,6 +16,7 @@
         <folder plugin="sgcache">services</folder>
         <folder>src</folder>
         <folder>tmpl</folder>
+        <filename>CHANGELOG.html</filename>
     </files>
 
     <languages>
@@ -253,6 +254,15 @@
                     type="purgebutton"
                     label="PLG_SYSTEM_SGCACHE_PURGE_BUTTON"
                     description="PLG_SYSTEM_SGCACHE_PURGE_BUTTON_DESC"
+                />
+            </fieldset>
+
+            <fieldset name="changelog" label="PLG_SYSTEM_SGCACHE_FIELDSET_CHANGELOG">
+                <field
+                    name="changelog_viewer"
+                    type="changelogviewer"
+                    label="PLG_SYSTEM_SGCACHE_CHANGELOG"
+                    description="PLG_SYSTEM_SGCACHE_CHANGELOG_DESC"
                 />
             </fieldset>
         </fields>
