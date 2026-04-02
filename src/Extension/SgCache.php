@@ -340,7 +340,7 @@ class SgCache extends CMSPlugin implements SubscriberInterface
     {
         return <<<HTML
         <div class="header-item d-flex align-items-center" id="sgcache-toolbar-wrapper">
-            <button type="button" id="sgcache-toolbar-btn" class="header-item-content btn btn-sm btn-outline-light d-flex align-items-center gap-1" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($label)}">
+            <button type="button" id="sgcache-toolbar-btn" class="header-item-content" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($label)}">
                 <span class="icon-trash" aria-hidden="true"></span>
                 <span class="sgcache-label d-none d-md-inline">{$this->esc($label)}</span>
             </button>
@@ -363,11 +363,11 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         return <<<HTML
         <div class="header-item d-flex align-items-center" id="sgcache-toolbar-wrapper">
             <div class="btn-group">
-                <button type="button" id="sgcache-toolbar-btn" class="header-item-content btn btn-sm btn-outline-light d-flex align-items-center gap-1" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($purgeAllLabel)}">
+                <button type="button" id="sgcache-toolbar-btn" class="header-item-content" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($purgeAllLabel)}">
                     <span class="icon-trash" aria-hidden="true"></span>
                     <span class="sgcache-label d-none d-md-inline">{$this->esc($label)}</span>
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-light dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <button type="button" class="header-item-content dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                     <span class="visually-hidden">Toggle Dropdown</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -393,37 +393,25 @@ class SgCache extends CMSPlugin implements SubscriberInterface
             var btn = document.getElementById('sgcache-toolbar-btn');
             var label = btn.querySelector('.sgcache-label');
             var origText = label ? label.textContent : '';
-            btn.disabled = true;
+            btn.style.opacity = '0.6';
+            btn.style.pointerEvents = 'none';
             if (label) label.textContent = '{$purgingMsg}';
-            btn.classList.remove('btn-outline-light', 'btn-success', 'btn-danger');
-            btn.classList.add('btn-outline-light');
             var url = sgcacheAjaxUrl + '&action=purge';
             if (pathOrAll && pathOrAll !== 'all') { url += '&purge_path=' + encodeURIComponent(pathOrAll); }
             fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                btn.disabled = false;
-                btn.classList.remove('btn-outline-light');
+                btn.style.opacity = '';
+                btn.style.pointerEvents = '';
                 if (data.success) {
-                    btn.classList.add('btn-success');
                     if (label) label.textContent = '{$successMsg}';
                 } else {
-                    btn.classList.add('btn-danger');
                     if (label) label.textContent = data.message || '{$failMsg}';
                 }
-                setTimeout(function() {
-                    btn.classList.remove('btn-success', 'btn-danger');
-                    btn.classList.add('btn-outline-light');
-                    if (label) label.textContent = origText;
-                }, 3000);
+                setTimeout(function() { if (label) label.textContent = origText; }, 3000);
             }).catch(function(e) {
-                btn.disabled = false;
-                btn.classList.remove('btn-outline-light');
-                btn.classList.add('btn-danger');
+                btn.style.opacity = '';
+                btn.style.pointerEvents = '';
                 if (label) label.textContent = '{$failMsg}';
-                setTimeout(function() {
-                    btn.classList.remove('btn-danger');
-                    btn.classList.add('btn-outline-light');
-                    if (label) label.textContent = origText;
-                }, 3000);
+                setTimeout(function() { if (label) label.textContent = origText; }, 3000);
             });
         }
         </script>
