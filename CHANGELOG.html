@@ -13,7 +13,9 @@
             <li><strong>Verbose logging toggle</strong>: Switch between production mode (bypasses/purges/errors only) and verbose mode (every frontend page visit)</li>
             <li><strong>Component exclusion selector</strong>: Searchable multi-select dropdown listing all installed components, using Joomla's native <code>list-fancy-select</code> layout</li>
             <li><strong>Non-SiteGround safeguards</strong>: Warning banner on admin pages when not hosted on SiteGround, all cache operations gracefully disabled</li>
-            <li><strong>Joomla update server</strong>: Automatic update notifications via Joomla's built-in updater</li>
+            <li><strong>Joomla update server</strong>: Automatic update notifications via Joomla's built-in updater with SHA256 checksum verification</li>
+            <li><strong>Multilingual support</strong>: 15 languages — English, Dutch, German, Spanish, French, Italian, Portuguese (BR), Russian, Polish, Japanese, Chinese (Simplified), Turkish, Greek, Czech, Swedish</li>
+            <li><strong>Changelog tab</strong>: View full version history directly in plugin settings</li>
         </ul>
 
         <h3>🔧 Improvements</h3>
@@ -21,13 +23,21 @@
             <li><strong>Logging system</strong>: JSON lines format with request ID correlation, auto-rotation, thread-safe writes</li>
             <li><strong>Socket-level logging</strong>: Full visibility into SiteGround daemon communication (connect, send, response)</li>
             <li><strong>Smart purge queue</strong>: Shutdown function fallback ensures cache is always purged even on admin save+redirect</li>
-            <li><strong>Language loading</strong>: Explicit <code>loadLanguage()</code> call ensures toolbar and notice strings work on all admin pages</li>
-            <li><strong>Logger suppression</strong>: Own AJAX requests (viewer/stats) don't pollute the log, but purge actions are logged</li>
+            <li><strong>Language loading</strong>: <code>loadLanguage()</code> call ensures toolbar and notice strings work on all admin pages</li>
+            <li><strong>Logger suppression</strong>: Log viewer AJAX requests don't pollute the log, but purge actions are logged</li>
             <li><strong>Float precision fix</strong>: Elapsed milliseconds logged as clean integers, not floating point noise</li>
+        </ul>
+
+        <h3>🔍 Security</h3>
+        <ul>
+            <li><strong>AJAX permission check</strong>: All AJAX endpoints verify <code>core.manage</code> authorization in addition to admin client check</li>
+            <li><strong>Purge path validation</strong>: Whitelist regex rejects invalid characters in manual purge paths</li>
+            <li><strong>Self-uninstall safety</strong>: Extension event handlers wrapped in try/catch to prevent errors during plugin removal</li>
         </ul>
 
         <h3>🐛 Bug Fixes</h3>
         <ul>
+            <li><strong>Fixed uninstall error</strong>: Plugin is now disabled in <code>preflight()</code> before uninstall to prevent "Class not found" errors when events fire on a half-removed plugin</li>
             <li><strong>Fixed custom field types not loading</strong>: Added <code>addfieldprefix</code> to manifest <code>&lt;fields&gt;</code> tag</li>
             <li><strong>Fixed language strings showing as raw keys</strong>: Moved globally-needed strings to <code>.sys.ini</code> and used <code>loadLanguage()</code></li>
             <li><strong>Fixed purge queue not flushing</strong>: Added <code>register_shutdown_function()</code> fallback for admin POST+redirect</li>

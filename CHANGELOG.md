@@ -10,17 +10,25 @@
 - **Verbose logging toggle**: Switch between production mode (bypasses/purges/errors only) and verbose mode (every frontend page visit)
 - **Component exclusion selector**: Searchable multi-select dropdown listing all installed components, using Joomla's native `list-fancy-select` layout
 - **Non-SiteGround safeguards**: Warning banner on admin pages when not hosted on SiteGround, all cache operations gracefully disabled
-- **Joomla update server**: Automatic update notifications via Joomla's built-in updater
+- **Joomla update server**: Automatic update notifications via Joomla's built-in updater with SHA256 checksum verification
+- **Multilingual support**: 15 languages — English, Dutch, German, Spanish, French, Italian, Portuguese (BR), Russian, Polish, Japanese, Chinese (Simplified), Turkish, Greek, Czech, Swedish
+- **Changelog tab**: View full version history directly in plugin settings
 
 ### 🔧 Improvements
 - **Logging system**: JSON lines format with request ID correlation, auto-rotation, thread-safe writes
 - **Socket-level logging**: Full visibility into SiteGround daemon communication (connect, send, response)
 - **Smart purge queue**: Shutdown function fallback ensures cache is always purged even on admin save+redirect
-- **Language loading**: Explicit `loadLanguage()` call ensures toolbar and notice strings work on all admin pages
-- **Logger suppression**: Own AJAX requests (viewer/stats) don't pollute the log, but purge actions are logged
+- **Language loading**: `loadLanguage()` call ensures toolbar and notice strings work on all admin pages
+- **Logger suppression**: Log viewer AJAX requests don't pollute the log, but purge actions are logged
 - **Float precision fix**: Elapsed milliseconds logged as clean integers, not floating point noise
 
+### 🔍 Security
+- **AJAX permission check**: All AJAX endpoints verify `core.manage` authorization in addition to admin client check
+- **Purge path validation**: Whitelist regex rejects invalid characters in manual purge paths
+- **Self-uninstall safety**: Extension event handlers wrapped in try/catch to prevent errors during plugin removal
+
 ### 🐛 Bug Fixes
+- **Fixed uninstall error**: Plugin is now disabled in `preflight()` before uninstall to prevent "Class not found" errors when events fire on a half-removed plugin
 - **Fixed custom field types not loading**: Added `addfieldprefix` to manifest `<fields>` tag
 - **Fixed language strings showing as raw keys**: Moved globally-needed strings to `.sys.ini` and used `loadLanguage()`
 - **Fixed purge queue not flushing**: Added `register_shutdown_function()` fallback for admin POST+redirect
