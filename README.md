@@ -52,15 +52,6 @@ SiteGround hosting includes a reverse proxy cache that stores copies of your pag
 | Vary by User Agent | No | Serve different cached versions for mobile vs desktop |
 | Cache for Logged-in Users | No | Whether to cache pages for logged-in users |
 
-## Building from Source
-
-Requires [7-Zip](https://www.7-zip.org/) installed.
-
-```bash
-cd cs-siteground-cache-plugin-for-joomla
-"C:\Program Files\7-Zip\7z.exe" a -tzip plg_system_sgcache_v1.0.0.zip sgcache.xml script.php services src language LICENSE
-```
-
 ## Attribution and License
 
 This plugin is licensed under the **GNU General Public License version 2 or later**.

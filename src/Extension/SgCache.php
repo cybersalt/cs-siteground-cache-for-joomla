@@ -221,12 +221,17 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     public function purgeEverything(Event $event): void
     {
-        if (!$this->params->get('enable_autoflush', 1) || !SiteToolsClient::isSiteGround()) {
-            return;
-        }
+        try {
+            if (!$this->params->get('enable_autoflush', 1) || !SiteToolsClient::isSiteGround()) {
+                return;
+            }
 
-        Logger::info('full_flush_triggered', ['trigger' => $event->getName()]);
-        $this->fullFlushTriggered = true;
+            Logger::info('full_flush_triggered', ['trigger' => $event->getName()]);
+            $this->fullFlushTriggered = true;
+        } catch (\Throwable $e) {
+            // Silently fail — this can happen during self-uninstall when
+            // plugin files are being removed while the event fires
+        }
     }
 
     // ------------------------------------------------------------------
@@ -740,6 +745,12 @@ class SgCache extends CMSPlugin implements SubscriberInterface
             return;
         }
 
+        $user = $app->getIdentity();
+        if (!$user || !$user->authorise('core.manage')) {
+            $this->setAjaxResult($event, json_encode(['error' => Text::_('PLG_SYSTEM_SGCACHE_ACCESS_DENIED')]));
+            return;
+        }
+
         if (!Session::checkToken('get') && !Session::checkToken('post')) {
             $this->setAjaxResult($event, json_encode(['error' => Text::_('PLG_SYSTEM_SGCACHE_INVALID_TOKEN')]));
             return;
@@ -789,7 +800,15 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         $purgePath = $app->input->getString('purge_path', '');
 
         if (!empty($purgePath)) {
+            // Validate path format — only allow URL-safe characters
             $purgePath = '/' . ltrim($purgePath, '/');
+            if (!preg_match('#^/[a-zA-Z0-9/_\-\.%]*$#', $purgePath)) {
+                $this->setAjaxResult($event, json_encode([
+                    'success' => false,
+                    'message' => 'Invalid path format.',
+                ]));
+                return;
+            }
             Logger::info('manual_purge_path', ['path' => $purgePath]);
             $result = SiteToolsClient::flushDynamicCache($hostname, $purgePath . '(.*)');
             $message = $result

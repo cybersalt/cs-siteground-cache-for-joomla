@@ -8,13 +8,21 @@
 
 \defined('_JEXEC') or die;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\Installer\InstallerAdapter;
 use Joomla\CMS\Language\Text;
+use Joomla\Database\DatabaseInterface;
 
 class PlgSystemSgcacheInstallerScript
 {
     public function preflight(string $type, InstallerAdapter $adapter): bool
     {
+        // Before uninstall: disable the plugin first to prevent events
+        // firing on a half-removed plugin (avoids "Class not found" errors)
+        if ($type === 'uninstall') {
+            $this->disablePlugin();
+        }
+
         return true;
     }
 
@@ -22,6 +30,25 @@ class PlgSystemSgcacheInstallerScript
     {
         if ($type === 'install' || $type === 'update') {
             $this->showPostInstallMessage($type);
+        }
+    }
+
+    private function disablePlugin(): void
+    {
+        try {
+            $db = Factory::getContainer()->get(DatabaseInterface::class);
+
+            $query = $db->getQuery(true)
+                ->update($db->quoteName('#__extensions'))
+                ->set($db->quoteName('enabled') . ' = 0')
+                ->where($db->quoteName('element') . ' = ' . $db->quote('sgcache'))
+                ->where($db->quoteName('folder') . ' = ' . $db->quote('system'))
+                ->where($db->quoteName('type') . ' = ' . $db->quote('plugin'));
+
+            $db->setQuery($query);
+            $db->execute();
+        } catch (\Throwable $e) {
+            // Best effort — don't block uninstall if this fails
         }
     }
 
