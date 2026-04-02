@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<updates>
+    <update>
+        <name>System - SiteGround Cache</name>
+        <description>Integrates Joomla with SiteGround's server-side caching system</description>
+        <element>sgcache</element>
+        <type>plugin</type>
+        <folder>system</folder>
+        <client>0</client>
+        <version>2.0.0</version>
+        <infourl title="SiteGround Cache for Joomla">https://github.com/cybersalt/cs-siteground-cache-for-joomla</infourl>
+        <downloads>
+            <downloadurl type="full" format="zip">https://github.com/cybersalt/cs-siteground-cache-for-joomla/releases/download/v2.0.0/plg_system_sgcache_v2.0.0.zip</downloadurl>
+        </downloads>
+        <sha256>b1aec1ba6ac833a051c54044f186791549f74552a96af9b644360be9ab5d4187</sha256>
+        <tags>
+            <tag>stable</tag>
+        </tags>
+        <targetplatform name="joomla" version="5\.[0-9]+" />
+        <php_minimum>8.1</php_minimum>
+        <changelogurl>https://raw.githubusercontent.com/cybersalt/cs-siteground-cache-for-joomla/main/CHANGELOG.html</changelogurl>
+    </update>
+</updates>
