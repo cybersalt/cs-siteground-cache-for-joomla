@@ -79,10 +79,14 @@ class SgCache extends CMSPlugin implements SubscriberInterface
     {
         $this->initLogger();
 
-        // Load our language file early so toolbar button strings are available
+        // Load our language files early so toolbar button/notice strings
+        // are available on all admin pages (not just plugin settings)
         $app = $this->getApplication();
         if ($app->isClient('administrator')) {
-            $app->getLanguage()->load('plg_system_sgcache', JPATH_PLUGINS . '/system/sgcache');
+            $lang = $app->getLanguage();
+            $basePath = JPATH_PLUGINS . '/system/sgcache';
+            $lang->load('plg_system_sgcache.sys', $basePath);
+            $lang->load('plg_system_sgcache', $basePath);
         }
     }
 
