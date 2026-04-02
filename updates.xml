@@ -16,7 +16,7 @@
         <tags>
             <tag>stable</tag>
         </tags>
-        <targetplatform name="joomla" version="5\.[0-9]+" />
+        <targetplatform name="joomla" version="(5|6)\.[0-9]+" />
         <php_minimum>8.1</php_minimum>
         <changelogurl>https://raw.githubusercontent.com/cybersalt/cs-siteground-cache-for-joomla/main/CHANGELOG.html</changelogurl>
     </update>
