@@ -311,19 +311,38 @@ class SgCache extends CMSPlugin implements SubscriberInterface
             $buttonHtml = $this->buildDropdownToolbarButton($ajaxUrl, $buttonLabel);
         }
 
-        $injection = $this->buildToolbarAssets($ajaxUrl) . $buttonHtml;
+        $assets = $this->buildToolbarAssets($ajaxUrl);
 
-        $body = str_replace('</body>', $injection . '</body>', $body);
+        // Inject button into Atum's header-items container (right side of top bar)
+        if (str_contains($body, 'header-items')) {
+            $body = preg_replace(
+                '/(<div[^>]*class="[^"]*header-items[^"]*"[^>]*>)/i',
+                '$1' . $buttonHtml,
+                $body,
+                1
+            );
+        } else {
+            // Fallback: prepend to the header element
+            $body = preg_replace(
+                '/(<header[^>]*>)/i',
+                '$1' . $buttonHtml,
+                $body,
+                1
+            );
+        }
+
+        // Add CSS/JS before </body>
+        $body = str_replace('</body>', $assets . '</body>', $body);
         $app->setBody($body);
     }
 
     private function buildSimpleToolbarButton(string $ajaxUrl, string $label): string
     {
         return <<<HTML
-        <div id="sgcache-toolbar-wrapper">
-            <button type="button" id="sgcache-toolbar-btn" class="sgcache-btn" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($label)}">
-                <span class="sgcache-icon">&#x1f5d1;</span>
-                <span class="sgcache-label">{$this->esc($label)}</span>
+        <div class="header-item d-flex align-items-center" id="sgcache-toolbar-wrapper">
+            <button type="button" id="sgcache-toolbar-btn" class="header-item-content btn btn-sm btn-outline-light d-flex align-items-center gap-1" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($label)}">
+                <span class="icon-trash" aria-hidden="true"></span>
+                <span class="sgcache-label d-none d-md-inline">{$this->esc($label)}</span>
             </button>
         </div>
         HTML;
@@ -338,24 +357,24 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         foreach ($customPaths as $path) {
             $pathEsc = $this->esc($path['label']);
             $pathVal = $this->esc($path['path']);
-            $pathItems .= '<a class="sgcache-dropdown-item" href="#" onclick="sgcacheToolbarPurge(\'' . $pathVal . '\'); return false;">' . $pathEsc . '</a>';
+            $pathItems .= '<li><a class="dropdown-item" href="#" onclick="sgcacheToolbarPurge(\'' . $pathVal . '\'); return false;">' . $pathEsc . '</a></li>';
         }
 
         return <<<HTML
-        <div id="sgcache-toolbar-wrapper">
-            <div class="sgcache-btn-group">
-                <button type="button" id="sgcache-toolbar-btn" class="sgcache-btn" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($purgeAllLabel)}">
-                    <span class="sgcache-icon">&#x1f5d1;</span>
-                    <span class="sgcache-label">{$this->esc($label)}</span>
+        <div class="header-item d-flex align-items-center" id="sgcache-toolbar-wrapper">
+            <div class="btn-group">
+                <button type="button" id="sgcache-toolbar-btn" class="header-item-content btn btn-sm btn-outline-light d-flex align-items-center gap-1" onclick="sgcacheToolbarPurge('all')" title="{$this->esc($purgeAllLabel)}">
+                    <span class="icon-trash" aria-hidden="true"></span>
+                    <span class="sgcache-label d-none d-md-inline">{$this->esc($label)}</span>
                 </button>
-                <button type="button" class="sgcache-btn sgcache-dropdown-toggle" onclick="sgcacheToggleDropdown()" title="More options">
-                    <span class="sgcache-caret">&#9662;</span>
+                <button type="button" class="btn btn-sm btn-outline-light dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                    <span class="visually-hidden">Toggle Dropdown</span>
                 </button>
-                <div id="sgcache-dropdown-menu" class="sgcache-dropdown-menu">
-                    <a class="sgcache-dropdown-item" href="#" onclick="sgcacheToolbarPurge('all'); return false;">{$this->esc($purgeAllLabel)}</a>
-                    <div class="sgcache-dropdown-divider"></div>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="#" onclick="sgcacheToolbarPurge('all'); return false;">{$this->esc($purgeAllLabel)}</a></li>
+                    <li><hr class="dropdown-divider"></li>
                     {$pathItems}
-                </div>
+                </ul>
             </div>
         </div>
         HTML;
@@ -368,71 +387,45 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         $purgingMsg = $this->esc(Text::_('PLG_SYSTEM_SGCACHE_TOOLBAR_PURGING'));
 
         return <<<HTML
-        <style>
-            #sgcache-toolbar-wrapper {
-                position: fixed;
-                top: 4px;
-                right: 80px;
-                z-index: 10000;
-            }
-            .sgcache-btn-group {
-                position: relative;
-                display: inline-flex;
-            }
-            .sgcache-btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                padding: 5px 12px;
-                border: 1px solid rgba(255,255,255,0.3);
-                border-radius: 4px;
-                background: rgba(0,0,0,0.2);
-                color: #fff;
-                font-size: 13px;
-                cursor: pointer;
-                transition: background 0.2s;
-                line-height: 1.4;
-                font-family: inherit;
-            }
-            .sgcache-btn:hover { background: rgba(0,0,0,0.4); }
-            .sgcache-btn.sgcache-success { background: rgba(40,167,69,0.6); }
-            .sgcache-btn.sgcache-error { background: rgba(220,53,69,0.6); }
-            .sgcache-btn.sgcache-busy { opacity: 0.7; cursor: wait; }
-            .sgcache-btn-group .sgcache-btn:first-child { border-radius: 4px 0 0 4px; }
-            .sgcache-btn-group .sgcache-dropdown-toggle { border-radius: 0 4px 4px 0; border-left: 1px solid rgba(255,255,255,0.2); padding: 5px 8px; }
-            .sgcache-dropdown-menu { display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; min-width: 200px; background: #2d3436; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); overflow: hidden; }
-            .sgcache-dropdown-menu.sgcache-open { display: block; }
-            .sgcache-dropdown-item { display: block; padding: 8px 14px; color: #dfe6e9; text-decoration: none; font-size: 13px; transition: background 0.15s; }
-            .sgcache-dropdown-item:hover { background: rgba(255,255,255,0.1); color: #fff; text-decoration: none; }
-            .sgcache-dropdown-divider { height: 1px; background: rgba(255,255,255,0.1); margin: 2px 0; }
-        </style>
         <script>
         var sgcacheAjaxUrl = '{$ajaxUrl}';
         function sgcacheToolbarPurge(pathOrAll) {
             var btn = document.getElementById('sgcache-toolbar-btn');
             var label = btn.querySelector('.sgcache-label');
-            var origText = label.textContent;
-            btn.classList.add('sgcache-busy');
-            btn.classList.remove('sgcache-success', 'sgcache-error');
-            label.textContent = '{$purgingMsg}';
-            sgcacheCloseDropdown();
+            var origText = label ? label.textContent : '';
+            btn.disabled = true;
+            if (label) label.textContent = '{$purgingMsg}';
+            btn.classList.remove('btn-outline-light', 'btn-success', 'btn-danger');
+            btn.classList.add('btn-outline-light');
             var url = sgcacheAjaxUrl + '&action=purge';
             if (pathOrAll && pathOrAll !== 'all') { url += '&purge_path=' + encodeURIComponent(pathOrAll); }
             fetch(url).then(function(r) { return r.json(); }).then(function(data) {
-                btn.classList.remove('sgcache-busy');
-                if (data.success) { btn.classList.add('sgcache-success'); label.textContent = '{$successMsg}'; }
-                else { btn.classList.add('sgcache-error'); label.textContent = data.message || '{$failMsg}'; }
-                setTimeout(function() { btn.classList.remove('sgcache-success', 'sgcache-error'); label.textContent = origText; }, 3000);
+                btn.disabled = false;
+                btn.classList.remove('btn-outline-light');
+                if (data.success) {
+                    btn.classList.add('btn-success');
+                    if (label) label.textContent = '{$successMsg}';
+                } else {
+                    btn.classList.add('btn-danger');
+                    if (label) label.textContent = data.message || '{$failMsg}';
+                }
+                setTimeout(function() {
+                    btn.classList.remove('btn-success', 'btn-danger');
+                    btn.classList.add('btn-outline-light');
+                    if (label) label.textContent = origText;
+                }, 3000);
             }).catch(function(e) {
-                btn.classList.remove('sgcache-busy');
-                btn.classList.add('sgcache-error');
-                label.textContent = '{$failMsg}';
-                setTimeout(function() { btn.classList.remove('sgcache-error'); label.textContent = origText; }, 3000);
+                btn.disabled = false;
+                btn.classList.remove('btn-outline-light');
+                btn.classList.add('btn-danger');
+                if (label) label.textContent = '{$failMsg}';
+                setTimeout(function() {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-outline-light');
+                    if (label) label.textContent = origText;
+                }, 3000);
             });
         }
-        function sgcacheToggleDropdown() { var m = document.getElementById('sgcache-dropdown-menu'); if (m) m.classList.toggle('sgcache-open'); }
-        function sgcacheCloseDropdown() { var m = document.getElementById('sgcache-dropdown-menu'); if (m) m.classList.remove('sgcache-open'); }
-        document.addEventListener('click', function(e) { if (!e.target.closest('.sgcache-btn-group')) sgcacheCloseDropdown(); });
         </script>
         HTML;
     }

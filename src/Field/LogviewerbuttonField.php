@@ -263,9 +263,9 @@ class LogviewerbuttonField extends FormField
                 <button type="button" class="btn btn-sm btn-primary" onclick="sglogRefresh()">
                     <span class="icon-loop" aria-hidden="true"></span> {$t['refresh']}
                 </button>
-                <a href="{$viewerUrl}" target="_blank" class="btn btn-sm btn-secondary">
+                <button type="button" class="btn btn-sm btn-secondary" onclick="window.open('{$viewerUrl}','_blank')">
                     <span class="icon-out-2" aria-hidden="true"></span> {$t['viewFull']}
-                </a>
+                </button>
                 <a href="{$downloadUrl}" class="btn btn-sm btn-success">
                     <span class="icon-download" aria-hidden="true"></span> {$t['download']}
                 </a>
