@@ -651,7 +651,28 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     public function onAfterRespond(): void
     {
+        $this->processQueue();
+    }
+
+    /**
+     * Process the purge queue. Called from onAfterRespond, and also
+     * registered as a shutdown function as a fallback for admin redirects
+     * where onAfterRespond may not fire.
+     */
+    private function processQueue(): void
+    {
+        // Only process once per request
+        static $processed = false;
+        if ($processed) {
+            return;
+        }
+        $processed = true;
+
         if (!SiteToolsClient::isSiteGround()) {
+            return;
+        }
+
+        if (!$this->fullFlushTriggered && empty($this->purgeQueue)) {
             return;
         }
 
@@ -660,10 +681,6 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         if ($this->fullFlushTriggered) {
             Logger::info('queue_process', ['action' => 'full_flush', 'reason' => 'full_flush_triggered']);
             SiteToolsClient::flushDynamicCache($hostname, '/(.*)');
-            return;
-        }
-
-        if (empty($this->purgeQueue)) {
             return;
         }
 
@@ -842,6 +859,14 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     private function queueContentUrls(string $context, $article): void
     {
+        // Register shutdown function as fallback in case onAfterRespond
+        // doesn't fire (e.g. admin save + redirect)
+        static $shutdownRegistered = false;
+        if (!$shutdownRegistered) {
+            register_shutdown_function([$this, 'shutdownFlush']);
+            $shutdownRegistered = true;
+        }
+
         $this->addToQueue(Uri::root(true) . '/');
 
         if ($context === 'com_content.article' && isset($article->id)) {
@@ -857,6 +882,15 @@ class SgCache extends CMSPlugin implements SubscriberInterface
                 }
             }
         }
+    }
+
+    /**
+     * Shutdown function fallback — ensures the queue is flushed even if
+     * onAfterRespond doesn't fire (common on admin save+redirect).
+     */
+    public function shutdownFlush(): void
+    {
+        $this->processQueue();
     }
 
     private function addToQueue(string $url): void
