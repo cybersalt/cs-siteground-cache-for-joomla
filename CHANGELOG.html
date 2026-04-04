@@ -2,6 +2,23 @@
     <h1>Changelog - SiteGround Cache Plugin for Joomla</h1>
 
     <div class="version">
+        <h2>🚀 Version 2.1.0 <span class="version-badge">April 2026</span></h2>
+
+        <h3>🔍 Security</h3>
+        <ul>
+            <li><strong>Hostname validation</strong>: SiteToolsClient now validates hostname format before sending to SiteGround daemon (alphanumeric, hyphens, dots only)</li>
+            <li><strong>Path validation in SiteToolsClient</strong>: Defense-in-depth validation ensures only safe characters reach the UNIX socket</li>
+            <li><strong>Tightened purge path regex</strong>: Removed <code>%</code> character from allowed purge path characters to prevent URL encoding attacks</li>
+            <li><strong>JavaScript context escaping</strong>: Viewer template AJAX URL now uses <code>json_encode()</code> instead of raw PHP echo in JavaScript string context</li>
+        </ul>
+
+        <h3>🔧 Improvements</h3>
+        <ul>
+            <li><strong>Joomla 6 compatibility</strong>: Update server target platform now includes Joomla 6</li>
+        </ul>
+    </div>
+
+    <div class="version">
         <h2>🚀 Version 2.0.0 <span class="version-badge">April 2026</span></h2>
 
         <h3>📦 New Features</h3>

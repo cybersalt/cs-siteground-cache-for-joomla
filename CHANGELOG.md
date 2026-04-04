@@ -1,5 +1,16 @@
 # Changelog
 
+## 🚀 Version 2.1.0 (April 2026)
+
+### 🔍 Security
+- **Hostname validation**: SiteToolsClient now validates hostname format before sending to SiteGround daemon (alphanumeric, hyphens, dots only)
+- **Path validation in SiteToolsClient**: Defense-in-depth validation ensures only safe characters reach the UNIX socket
+- **Tightened purge path regex**: Removed `%` character from allowed purge path characters to prevent URL encoding attacks
+- **JavaScript context escaping**: Viewer template AJAX URL now uses `json_encode()` instead of raw PHP echo in JavaScript string context
+
+### 🔧 Improvements
+- **Joomla 6 compatibility**: Update server target platform now includes Joomla 6 (`(5|6)\.[0-9]+`)
+
 ## 🚀 Version 2.0.0 (April 2026)
 
 ### 📦 New Features
