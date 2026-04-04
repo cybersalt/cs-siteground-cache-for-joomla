@@ -802,7 +802,7 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         if (!empty($purgePath)) {
             // Validate path format — only allow URL-safe characters
             $purgePath = '/' . ltrim($purgePath, '/');
-            if (!preg_match('#^/[a-zA-Z0-9/_\-\.%]*$#', $purgePath)) {
+            if (!preg_match('#^/[a-zA-Z0-9/_\-\.]*$#', $purgePath)) {
                 $this->setAjaxResult($event, json_encode([
                     'success' => false,
                     'message' => 'Invalid path format.',

@@ -278,7 +278,7 @@
 </div>
 
 <script>
-var AJAX_URL = '<?php echo $ajaxUrl; ?>';
+var AJAX_URL = <?php echo json_encode($ajaxUrl); ?>;
 var currentOffset = 0;
 var currentTotal = 0;
 

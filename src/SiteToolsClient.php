@@ -50,6 +50,18 @@ class SiteToolsClient
      */
     public static function flushDynamicCache(string $hostname, string $path): bool
     {
+        // Validate hostname — only allow valid domain characters
+        if (empty($hostname) || !preg_match('/^[a-zA-Z0-9\-\.]+$/', $hostname)) {
+            Logger::error('invalid_hostname', ['hostname' => $hostname]);
+            return false;
+        }
+
+        // Validate path — must start with / and only contain safe characters + regex suffix
+        if (empty($path) || !preg_match('#^/[a-zA-Z0-9/_\-\.&;=?]*(\(\.\*\))?$#', $path)) {
+            Logger::error('invalid_path', ['path' => $path]);
+            return false;
+        }
+
         Logger::info('flush_request', [
             'hostname' => $hostname,
             'path'     => $path,

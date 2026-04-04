@@ -12,7 +12,7 @@
         <downloads>
             <downloadurl type="full" format="zip">https://github.com/cybersalt/cs-siteground-cache-for-joomla/releases/download/v2.0.0/plg_system_sgcache_v2.0.0.zip</downloadurl>
         </downloads>
-        <sha256>3ec305a0ce8c072407c994ddf0f0febb43fd59584e0c03f79c2d6d2f72e8d2ec</sha256>
+        <sha256>72383a0a92bd84664076d4424fd7f378c0e6fabbf0f4598e0d86fdcefd80f411</sha256>
         <tags>
             <tag>stable</tag>
         </tags>
