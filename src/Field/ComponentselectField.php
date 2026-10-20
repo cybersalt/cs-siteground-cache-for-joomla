@@ -19,6 +19,19 @@ class ComponentselectField extends ListField
 {
     protected $type = 'Componentselect';
 
+    public function setup(\SimpleXMLElement $element, $value, $group = null)
+    {
+        $result = parent::setup($element, $value, $group);
+
+        // The manifest default (and a fresh install's stored value) is one comma-separated
+        // string. Split it so the multi-select shows those components as selected.
+        if ($this->multiple && \is_string($this->value)) {
+            $this->value = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $this->value))));
+        }
+
+        return $result;
+    }
+
     protected function getOptions(): array
     {
         $options = parent::getOptions();

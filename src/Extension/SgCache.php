@@ -1167,9 +1167,10 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
         $excluded = $this->params->get('excluded_components', []);
 
-        // Handle both array (fancy-select) and legacy string (textarea) formats
+        // Handle both array (fancy-select) and string formats. A fresh install stores the
+        // manifest default as one comma-separated string; the legacy textarea used newlines.
         if (\is_string($excluded)) {
-            $excluded = array_filter(array_map('trim', explode("\n", $excluded)));
+            $excluded = array_filter(array_map('trim', preg_split('/[\r\n,]+/', $excluded)));
         }
 
         if (empty($excluded)) {

@@ -28,7 +28,7 @@ class StatusdashboardField extends FormField
         // interpolation (matches the v2.1.0 tmpl/viewer.php hardening pattern).
         $testUrlJs = json_encode($testUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
         // Cache-bust the logo on plugin updates so browsers fetch the new SVG
-        $logoVer = '2.2.1';
+        $logoVer = '2.2.2';
         $logoUrl = Uri::root(true) . '/media/plg_system_sgcache/images/logo.svg?v=' . $logoVer;
 
         $isSiteGround = SiteToolsClient::isSiteGround();

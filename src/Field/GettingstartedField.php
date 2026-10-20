@@ -21,7 +21,7 @@ class GettingstartedField extends FormField
     protected function getInput(): string
     {
         // Cache-bust the logo on plugin updates so browsers fetch the new SVG
-        $logoVer = '2.2.1';
+        $logoVer = '2.2.2';
         $logoUrl = Uri::root(true) . '/media/plg_system_sgcache/images/logo.svg?v=' . $logoVer;
 
         $welcome   = Text::_('PLG_SYSTEM_SGCACHE_GS_WELCOME');

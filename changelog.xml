@@ -19,6 +19,20 @@
         <element>sgcache</element>
         <type>plugin</type>
         <folder>system</folder>
+        <version>2.2.2</version>
+        <fix>
+            <item>Default excluded components were ignored on new installs: a fresh install stores the default list (com_users, com_finder, com_contact, com_privacy) as one comma-separated value, but the plugin only split the list on line breaks, so none of the four was actually excluded. The list is now read correctly, and the Excluded Components field shows the four defaults as selected.</item>
+            <item>PHP warnings on the Logs tab: the inline log viewer referred to two undefined text labels ("Loading..." and "Show More"), which printed "Undefined array key" warnings on sites that display PHP warnings.</item>
+        </fix>
+        <note>
+            <item>Getting Started tip updated: pages with forms have been detected and left uncached automatically since 2.2.1, so the tip no longer tells you to add contact and login pages to Excluded URLs by hand.</item>
+        </note>
+    </changelog>
+
+    <changelog>
+        <element>sgcache</element>
+        <type>plugin</type>
+        <folder>system</folder>
         <version>2.2.1</version>
         <fix>
             <item>Joomla's no-cache headers blocked SiteGround's cache: even with the cookie removed, every page went out with Cache-Control: no-store, no-cache and a past Expires date, and SiteGround's Dynamic Cache won't store a response carrying Cache-Control: no-cache. Cacheable anonymous pages are now marked cacheable in Joomla and the session limiter's no-cache headers are removed; Joomla then sends a 15-minute Expires instead. Logged-in, excluded and cookie-carrying pages keep their no-cache headers.</item>

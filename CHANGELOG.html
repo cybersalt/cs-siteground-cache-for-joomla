@@ -2,6 +2,21 @@
     <h1>Changelog - SiteGround Cache Plugin for Joomla</h1>
 
     <div class="version">
+        <h2>🚀 Version 2.2.2 <span class="version-badge">October 2026</span></h2>
+
+        <h3>🐛 Bug Fixes</h3>
+        <ul>
+            <li><strong>Default excluded components were ignored on new installs</strong>: a fresh install stores the default list (<code>com_users</code>, <code>com_finder</code>, <code>com_contact</code>, <code>com_privacy</code>) as one comma-separated value, but the plugin only split the list on line breaks, so none of the four was actually excluded. The list is now read correctly, and the Excluded Components field shows the four defaults as selected instead of looking empty.</li>
+            <li><strong>PHP warnings on the Logs tab</strong>: the inline log viewer referred to two text labels ("Loading..." and "Show More") that were never defined, which printed "Undefined array key" warnings on sites that display PHP warnings.</li>
+        </ul>
+
+        <h3>📝 Documentation</h3>
+        <ul>
+            <li><strong>Getting Started tip updated</strong>: pages with forms have been detected and left uncached automatically since 2.2.1, so the tip no longer tells you to add contact and login pages to Excluded URLs by hand.</li>
+        </ul>
+    </div>
+
+    <div class="version">
         <h2>🚀 Version 2.2.1 <span class="version-badge">October 2026</span></h2>
 
         <h3>🐛 Bug Fixes</h3>

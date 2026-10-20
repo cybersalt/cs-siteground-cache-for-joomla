@@ -1,5 +1,14 @@
 # Changelog
 
+## 🚀 Version 2.2.2 (October 2026)
+
+### 🐛 Bug Fixes
+- **Default excluded components were ignored on new installs**: a fresh install stores the default list (`com_users`, `com_finder`, `com_contact`, `com_privacy`) as one comma-separated value, but the plugin only split the list on line breaks, so none of the four was actually excluded. The list is now read correctly, and the Excluded Components field shows the four defaults as selected instead of looking empty.
+- **PHP warnings on the Logs tab**: the inline log viewer referred to two text labels ("Loading..." and "Show More") that were never defined, which printed "Undefined array key" warnings on sites that display PHP warnings.
+
+### 📝 Documentation
+- **Getting Started tip updated**: pages with forms have been detected and left uncached automatically since 2.2.1, so the tip no longer tells you to add contact and login pages to Excluded URLs by hand.
+
 ## 🚀 Version 2.2.1 (October 2026)
 
 ### 🐛 Bug Fixes

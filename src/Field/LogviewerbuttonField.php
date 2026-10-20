@@ -39,6 +39,8 @@ class LogviewerbuttonField extends FormField
             'clear'         => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_CLEAR')),
             'test'          => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_TEST')),
             'refresh'       => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_REFRESH')),
+            'loading'       => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_LOADING')),
+            'showMore'      => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_SHOW_MORE')),
         ];
 
         // JS-context strings + URLs: encoded with json_encode() to defend against any
