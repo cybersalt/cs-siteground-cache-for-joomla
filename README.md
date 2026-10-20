@@ -68,7 +68,7 @@ Updates arrive through Joomla's normal updater (**System → Update → Extensio
 
 ## Attribution and license
 
-This plugin is licensed under the **GNU General Public License version 2 or later**. See [LICENSE](LICENSE).
+This plugin is licensed under the **GNU General Public License version 2 or later**. See [LICENSE](LICENSE) for the licence text and [NOTICE](NOTICE) for the copyright and attribution notice.
 
 The SiteGround server communication protocol (the UNIX socket API for cache purging) was learned by studying SiteGround's [Speed Optimizer](https://wordpress.org/plugins/sg-cachepress/) plugin for WordPress (formerly SG CachePress), which SiteGround publishes under the **GNU General Public License v3**. The WordPress plugin source was reviewed through the [WordpressPluginDirectory/sg-cachepress](https://github.com/WordpressPluginDirectory/sg-cachepress) mirror on GitHub.
 
