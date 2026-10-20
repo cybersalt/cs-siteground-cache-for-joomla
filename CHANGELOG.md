@@ -1,5 +1,19 @@
 # Changelog
 
+## 🚀 Version 2.2.1 (October 2026)
+
+### 🐛 Bug Fixes
+- **Joomla's no-cache headers blocked SiteGround's cache**: even with the cookie removed, every page still went out with `Cache-Control: no-store, no-cache` and an `Expires` date in the past (Joomla's default for pages not marked cacheable, plus PHP's session cache limiter). SiteGround's Dynamic Cache won't store a response carrying `Cache-Control: no-cache`, so pages were never cached. Cacheable anonymous pages are now marked cacheable in Joomla and the session limiter's no-cache headers are removed. Joomla then sends a 15-minute `Expires` instead. Logged-in, excluded and cookie-carrying pages keep their no-cache headers.
+- **Pages that still carried a cookie were marked cacheable**: 2.2.0 sent `X-Cache-Enabled: True` before it tried to strip `Set-Cookie`, and did the stripping in `onAfterRender`. If the suppression setting was off, or another extension set a cookie after render, the page went out claiming to be cacheable with a cookie attached, and SiteGround skipped it (`SKIP_CACHE_SET_COOKIE`). Cookie stripping now runs in `onBeforeRespond` at the lowest priority, after every other extension has finished, and `X-Cache-Enabled: True` is only sent when no `Set-Cookie` is left on the response. Otherwise it sends `False`.
+- **Silent failure**: when the cookie can't be removed (headers already sent, or the cookie is in Joomla's own header list) the plugin now logs a `set_cookie_not_stripped` warning with the reason. An `onAfterRespond` self-check logs `cache_claimed_with_cookie` if a cookie still went out with a cacheable page. Verbose logging records why each page was or wasn't cached.
+- **Pages with forms were cached**: any page carrying a Joomla form token (Convert Forms, contact forms, login modules) is now left uncached and keeps its session cookie, so the token still matches the visitor's session when they submit. Before, these pages relied on being excluded by hand.
+
+## 🚀 Version 2.2.0 (June 2026)
+
+### 🔧 Improvements
+- **Set-Cookie suppression on cacheable anonymous responses**: Joomla starts a session for every guest, which adds a `Set-Cookie` to the response. SiteGround's edge skips caching any response with `Set-Cookie` (`X-Proxy-Cache-Info: SKIP_CACHE_SET_COOKIE`), so the dynamic cache was effectively a no-op for first-visit anonymous traffic — including search engine crawlers. The plugin now strips `Set-Cookie` headers on cacheable anonymous GET responses (in `onAfterRender`, after the `X-Cache-Enabled: True` decision), so SiteGround's edge can actually cache. URL and component exclusions still receive untouched sessions for forms / CSRF / login. New "Suppress Session Cookie on Cacheable Pages" toggle in the Advanced tab — defaults ON.
+- **Dark-mode contrast fix in inline log viewer**: The stats row labels, timestamp and elapsed-ms text, request-ID badges, warning/debug badges, and success/danger/info alert messages all used `opacity` or hardcoded dark colors that became unreadable when Joomla's admin (Atum) was in dark mode. Added explicit dark-mode color overrides triggered by either `prefers-color-scheme: dark` or Joomla's Bootstrap-5.3 `[data-bs-theme="dark"]` toggle.
+
 ## 🚀 Version 2.1.0 (April 2026)
 
 ### 🔍 Security

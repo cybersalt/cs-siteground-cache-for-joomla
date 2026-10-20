@@ -16,6 +16,7 @@ use Joomla\CMS\Session\Session;
 use Joomla\CMS\Uri\Uri;
 use Joomla\CMS\Router\Route;
 use Joomla\Event\Event;
+use Joomla\Event\Priority;
 use Joomla\Event\SubscriberInterface;
 use Cybersalt\Plugin\System\SgCache\Logger;
 use Cybersalt\Plugin\System\SgCache\SiteToolsClient;
@@ -38,6 +39,17 @@ class SgCache extends CMSPlugin implements SubscriberInterface
      * Whether the logger has been initialized.
      */
     private bool $loggerReady = false;
+
+    /**
+     * URL of the current frontend page if it passed every cacheability check
+     * in onAfterRender; null otherwise.
+     */
+    private ?string $cacheCandidateUrl = null;
+
+    /**
+     * Whether X-Cache-Enabled: True was sent for this request.
+     */
+    private bool $cacheClaimed = false;
 
     public static function getSubscribedEvents(): array
     {
@@ -63,7 +75,10 @@ class SgCache extends CMSPlugin implements SubscriberInterface
             // Admin toolbar button + cache headers + template editor detection
             'onAfterRender'           => 'onAfterRender',
 
-            // Flush the queue at shutdown
+            // Strip Set-Cookie + decide X-Cache-Enabled, after everyone else
+            'onBeforeRespond'         => ['onBeforeRespond', Priority::MIN],
+
+            // Cookie self-check + flush the queue at shutdown
             'onAfterRespond'          => 'onAfterRespond',
 
             // AJAX handler
@@ -298,15 +313,152 @@ class SgCache extends CMSPlugin implements SubscriberInterface
             return;
         }
 
-        // Cache enabled for this page — only log in verbose mode
+        // Cache candidate. The final X-Cache-Enabled value is decided in
+        // onBeforeRespond, once we know whether a Set-Cookie survives. Until
+        // then the page is marked not cacheable, so any path that skips
+        // onBeforeRespond never claims a cacheability it can't deliver.
         if ($verbose) {
-            Logger::info('frontend_request', ['url' => $currentUrl, 'cache' => 'enabled']);
+            Logger::info('frontend_request', ['url' => $currentUrl, 'cache' => 'candidate']);
         }
+        $app->setHeader('X-Cache-Enabled', 'False', true);
+        $this->cacheCandidateUrl = $currentUrl;
+    }
+
+    // ------------------------------------------------------------------
+    // onBeforeRespond: strip Set-Cookie, then tell SiteGround the truth
+    // ------------------------------------------------------------------
+
+    /**
+     * Runs last, immediately before Joomla sends the headers.
+     *
+     * SiteGround refuses to cache any response that carries Set-Cookie
+     * (X-Proxy-Cache-Info: SKIP_CACHE_SET_COOKIE). Joomla starts a session,
+     * and so Set-Cookies, for every guest. WordPress doesn't, which is why
+     * SG's WP plugin never needed this. So on cacheable anonymous GETs we
+     * strip Set-Cookie here, after every other onAfterRender / onAfterCompress
+     * / onBeforeRespond handler has had its chance to add one, and only then
+     * claim X-Cache-Enabled: True. If a cookie survives, the claim is False
+     * and the reason is logged as a warning.
+     *
+     * Safe because: the caller is anonymous (logged-in check in onAfterRender)
+     * and URL/component exclusions keep full sessions for form pages.
+     */
+    public function onBeforeRespond(): void
+    {
+        if ($this->cacheCandidateUrl === null) {
+            return;
+        }
+
+        $app        = $this->getApplication();
+        $currentUrl = $this->cacheCandidateUrl;
+        $verbose    = (bool) $this->params->get('verbose_logging', 0);
+        $suppress   = (bool) $this->params->get('suppress_session_cookie', 1);
+        $reason     = '';
+
+        // A page carrying a Joomla form token (Convert Forms, contact forms,
+        // login modules...) needs the visitor's own session: the token is
+        // checked against it on submit. Caching it would serve one visitor's
+        // token to everyone, and stripping the cookie would leave the visitor
+        // with no session to match. Keep the cookie and the no-cache headers.
+        if ($app->input->getMethod() === 'GET' && $this->bodyHasFormToken()) {
+            $app->setHeader('X-Cache-Enabled', 'False', true);
+            Logger::info('frontend_request', ['url' => $currentUrl, 'cache' => 'bypass', 'reason' => 'form_token_on_page']);
+            $this->cacheCandidateUrl = null;
+            return;
+        }
+
+        if ($app->input->getMethod() !== 'GET') {
+            $reason = 'not_get';
+        } elseif ($suppress) {
+            if (\headers_sent($file, $line)) {
+                $reason = 'headers_already_sent';
+                Logger::warning('set_cookie_not_stripped', [
+                    'url'    => $currentUrl,
+                    'reason' => $reason,
+                    'at'     => $file . ':' . $line,
+                ]);
+            } else {
+                \header_remove('Set-Cookie');
+            }
+        }
+
+        $cookieLeft = $this->hasSetCookie();
+
+        if ($cookieLeft && $reason === '') {
+            if (!$suppress) {
+                $reason = 'suppress_session_cookie_off';
+            } else {
+                // Stripped natively but still present: it's in Joomla's own
+                // header list (set via $app->setHeader), which header_remove()
+                // can't reach.
+                $reason = 'set_cookie_in_app_headers';
+                Logger::warning('set_cookie_not_stripped', ['url' => $currentUrl, 'reason' => $reason]);
+            }
+        }
+
+        if ($cookieLeft) {
+            $app->setHeader('X-Cache-Enabled', 'False', true);
+            if ($verbose) {
+                Logger::debug('frontend_request', ['url' => $currentUrl, 'cache' => 'bypass', 'reason' => $reason]);
+            }
+            $this->cacheCandidateUrl = null;
+            return;
+        }
+
         $app->setHeader('X-Cache-Enabled', 'True', true);
+        $this->cacheClaimed = true;
+
+        // SiteGround's Dynamic Cache won't store a response that carries
+        // Cache-Control: no-cache. Joomla sends no-store/no-cache on every
+        // page unless it is marked cacheable, and PHP's session cache limiter
+        // adds its own no-cache set at session_start(). Mark the page
+        // cacheable so respond() skips its no-cache headers, and drop the
+        // session limiter's. Purges on content save keep the edge fresh.
+        $app->allowCache(true);
+        if (!\headers_sent()) {
+            \header_remove('Cache-Control');
+            \header_remove('Pragma');
+            \header_remove('Expires');
+        }
 
         if ($this->params->get('vary_user_agent', 0)) {
             $app->setHeader('Vary', 'User-Agent', true);
         }
+
+        if ($verbose) {
+            Logger::info('frontend_request', ['url' => $currentUrl, 'cache' => 'enabled']);
+        }
+    }
+
+    /**
+     * Whether a Set-Cookie is still queued, natively or in Joomla's header list.
+     */
+    private function hasSetCookie(): bool
+    {
+        foreach (\headers_list() as $header) {
+            if (\stripos($header, 'set-cookie:') === 0) {
+                return true;
+            }
+        }
+
+        foreach ($this->getApplication()->getHeaders() as $header) {
+            if (\strtolower($header['name']) === 'set-cookie') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function bodyHasFormToken(): bool
+    {
+        $token = Session::getFormToken();
+        $body  = (string) $this->getApplication()->getBody();
+
+        // Only the hidden form field counts. Joomla also puts the token in
+        // its script options ("csrf.token") on most pages, which says nothing
+        // about whether the page has a form.
+        return $token !== '' && $body !== '' && \str_contains($body, 'name="' . $token . '"');
     }
 
     // ------------------------------------------------------------------
@@ -389,12 +541,16 @@ class SgCache extends CMSPlugin implements SubscriberInterface
     {
         $purgeAllLabel = Text::_('PLG_SYSTEM_SGCACHE_TOOLBAR_PURGE_ALL');
 
+        // Custom path values flow into a JS function call inside an onclick attribute.
+        // Use a data-* attribute + delegated event listener instead of interpolating the
+        // path into the JS string — defends against admin-supplied strings containing
+        // quote characters that would otherwise break out of the JS string context.
         $pathItems = '';
         $customPaths = $this->getToolbarPurgePaths();
         foreach ($customPaths as $path) {
             $pathEsc = $this->esc($path['label']);
             $pathVal = $this->esc($path['path']);
-            $pathItems .= '<li><a class="dropdown-item" href="#" onclick="sgcacheToolbarPurge(\'' . $pathVal . '\'); return false;">' . $pathEsc . '</a></li>';
+            $pathItems .= '<li><a class="dropdown-item sgcache-purge-path" href="#" data-sgcache-path="' . $pathVal . '">' . $pathEsc . '</a></li>';
         }
 
         return <<<HTML
@@ -423,38 +579,53 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     private function buildToolbarAssets(string $ajaxUrl): string
     {
-        $successMsg = $this->esc(Text::_('PLG_SYSTEM_SGCACHE_PURGE_SUCCESS'));
-        $failMsg = $this->esc(Text::_('PLG_SYSTEM_SGCACHE_PURGE_FAILED'));
-        $purgingMsg = $this->esc(Text::_('PLG_SYSTEM_SGCACHE_TOOLBAR_PURGING'));
+        // All values passed into JS string context use json_encode() — safe across
+        // any character including quotes, newlines, unicode tricks. Defends against
+        // a malicious live_site config or unusual HTTP_HOST that could otherwise
+        // break out of a single-quoted JS literal. Matches the v2.1.0 hardening
+        // pattern in tmpl/viewer.php.
+        $ajaxUrlJs   = json_encode($ajaxUrl,                                                       JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
+        $successJs   = json_encode(Text::_('PLG_SYSTEM_SGCACHE_PURGE_SUCCESS'),                    JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+        $failJs      = json_encode(Text::_('PLG_SYSTEM_SGCACHE_PURGE_FAILED'),                     JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+        $purgingJs   = json_encode(Text::_('PLG_SYSTEM_SGCACHE_TOOLBAR_PURGING'),                  JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
 
         return <<<HTML
         <script>
-        var sgcacheAjaxUrl = '{$ajaxUrl}';
+        var sgcacheAjaxUrl = {$ajaxUrlJs};
         function sgcacheToolbarPurge(pathOrAll) {
             var btn = document.getElementById('sgcache-toolbar-btn');
             var label = btn.querySelector('.sgcache-label');
             var origText = label ? label.textContent.trim() : '';
             btn.style.opacity = '0.6';
             btn.style.pointerEvents = 'none';
-            if (label) label.textContent = '{$purgingMsg}';
+            if (label) label.textContent = {$purgingJs};
             var url = sgcacheAjaxUrl + '&action=purge';
             if (pathOrAll && pathOrAll !== 'all') { url += '&purge_path=' + encodeURIComponent(pathOrAll); }
             fetch(url).then(function(r) { return r.json(); }).then(function(data) {
                 btn.style.opacity = '';
                 btn.style.pointerEvents = '';
                 if (data.success) {
-                    if (label) label.textContent = '{$successMsg}';
+                    if (label) label.textContent = {$successJs};
                 } else {
-                    if (label) label.textContent = data.message || '{$failMsg}';
+                    if (label) label.textContent = data.message || {$failJs};
                 }
                 setTimeout(function() { if (label) label.textContent = origText; }, 3000);
             }).catch(function(e) {
                 btn.style.opacity = '';
                 btn.style.pointerEvents = '';
-                if (label) label.textContent = '{$failMsg}';
+                if (label) label.textContent = {$failJs};
                 setTimeout(function() { if (label) label.textContent = origText; }, 3000);
             });
         }
+        // Bind data-attribute-driven path picks via delegated event listener so
+        // path values never get interpolated into onclick attributes (which the
+        // browser HTML-decodes before JS sees them, defeating htmlspecialchars).
+        document.addEventListener('click', function (ev) {
+            var el = ev.target && ev.target.closest && ev.target.closest('.sgcache-purge-path');
+            if (!el) return;
+            ev.preventDefault();
+            sgcacheToolbarPurge(el.getAttribute('data-sgcache-path') || 'all');
+        });
         </script>
         HTML;
     }
@@ -677,6 +848,20 @@ class SgCache extends CMSPlugin implements SubscriberInterface
 
     public function onAfterRespond(): void
     {
+        // Self-check: we told SiteGround "cache this". If a Set-Cookie still
+        // went out with it, SG skipped the page and nothing else would say so.
+        if ($this->cacheClaimed) {
+            foreach (\headers_list() as $header) {
+                if (\stripos($header, 'set-cookie:') === 0) {
+                    Logger::warning('cache_claimed_with_cookie', [
+                        'url'    => $this->cacheCandidateUrl,
+                        'cookie' => \substr($header, 12, \strcspn($header, '=', 12)),
+                    ]);
+                    break;
+                }
+            }
+        }
+
         $this->processQueue();
     }
 
@@ -878,6 +1063,17 @@ class SgCache extends CMSPlugin implements SubscriberInterface
         $token = Session::getFormToken();
         $ajaxUrl = Uri::base() . 'index.php?option=com_ajax&plugin=sgcache&group=system&format=raw&' . $token . '=1';
         $logFilePath = Logger::getLogFile();
+
+        // Defense-in-depth: prevent clickjacking on the standalone viewer page.
+        // The viewer page has a "Clear Log" button; pinning frame-ancestors to none
+        // means even a stolen-token attacker can't load it inside an iframe to fool
+        // an admin into clicking-through. Belt-and-suspenders behind the token check.
+        if (!\headers_sent()) {
+            \header('X-Frame-Options: DENY');
+            \header("Content-Security-Policy: frame-ancestors 'none'");
+            \header('X-Content-Type-Options: nosniff');
+            \header('Referrer-Policy: same-origin');
+        }
 
         ob_start();
         include \dirname(__DIR__, 2) . '/tmpl/viewer.php';

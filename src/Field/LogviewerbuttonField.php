@@ -31,61 +31,96 @@ class LogviewerbuttonField extends FormField
         $statsUrl    = $baseUrl . '&action=stats';
         $viewUrl     = $baseUrl . '&action=view';
 
+        // HTML-context strings: escaped via esc().
         $t = [
             'view'          => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_VIEW')),
             'viewFull'      => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_VIEW_FULL')),
             'download'      => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_DOWNLOAD')),
             'clear'         => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_CLEAR')),
             'test'          => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_TEST')),
-            'clearConfirm'  => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_CLEAR_CONFIRM')),
             'refresh'       => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_REFRESH')),
-            'noEntries'     => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_NO_ENTRIES')),
-            'loading'       => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_LOADING')),
-            'showMore'      => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_SHOW_MORE')),
-            'showLess'      => $this->esc(Text::_('PLG_SYSTEM_SGCACHE_LOG_SHOW_LESS')),
         ];
+
+        // JS-context strings + URLs: encoded with json_encode() to defend against any
+        // character that could break out of a JS literal — even though all values are
+        // author-controlled (Uri::base() + .ini lang strings), this matches the v2.1.0
+        // hardening pattern in tmpl/viewer.php.
+        $jsFlags   = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES;
+        $viewerUrlJs   = json_encode($viewerUrl,   $jsFlags);
+        $viewUrlJs     = json_encode($viewUrl,     $jsFlags);
+        $statsUrlJs    = json_encode($statsUrl,    $jsFlags);
+        $testUrlJs     = json_encode($testUrl,     $jsFlags);
+        $clearUrlJs    = json_encode($clearUrl,    $jsFlags);
+        $noEntriesJs   = json_encode(Text::_('PLG_SYSTEM_SGCACHE_LOG_NO_ENTRIES'),     $jsFlags);
+        $loadingJs     = json_encode(Text::_('PLG_SYSTEM_SGCACHE_LOG_LOADING'),        $jsFlags);
+        $clearConfirmJs= json_encode(Text::_('PLG_SYSTEM_SGCACHE_LOG_CLEAR_CONFIRM'),  $jsFlags);
+        $showMoreJs    = json_encode(Text::_('PLG_SYSTEM_SGCACHE_LOG_SHOW_MORE'),      $jsFlags);
+        $showLessJs    = json_encode(Text::_('PLG_SYSTEM_SGCACHE_LOG_SHOW_LESS'),      $jsFlags);
 
         return <<<HTML
 
         <style>
+            /* Scoped theme variables — set local defaults for light mode, then override on
+               any dark-mode trigger Atum / Joomla / the OS might use. This is more reliable
+               than --bs-tertiary-bg etc. which Joomla 5.4 Atum doesn't actually switch. */
             .sglog-dashboard {
-                border: 1px solid var(--template-bg-dark-7, #dee2e6);
+                --sg-text: #212529;
+                --sg-text-muted: #6c757d;
+                --sg-bg: #ffffff;
+                --sg-bg-subtle: #f8f9fa;
+                --sg-bg-elevated: #ffffff;
+                --sg-border: #dee2e6;
+
+                border: 1px solid var(--sg-border);
                 border-radius: 8px;
                 overflow: hidden;
                 font-size: 13px;
                 max-width: 100%;
+                background: var(--sg-bg);
+                color: var(--sg-text);
+            }
+            [data-bs-theme="dark"] .sglog-dashboard,
+            [data-color-scheme="dark"] .sglog-dashboard,
+            .theme-dark .sglog-dashboard {
+                --sg-text: rgba(255, 255, 255, 0.92);
+                --sg-text-muted: rgba(255, 255, 255, 0.6);
+                --sg-bg: rgba(255, 255, 255, 0.02);
+                --sg-bg-subtle: rgba(255, 255, 255, 0.04);
+                --sg-bg-elevated: rgba(255, 255, 255, 0.06);
+                --sg-border: rgba(255, 255, 255, 0.12);
             }
             /* Stats cards row */
             .sglog-stats {
                 display: flex;
                 flex-wrap: wrap;
                 gap: 0;
-                background: var(--template-bg-dark-3, #f8f9fa);
-                border-bottom: 1px solid var(--template-bg-dark-7, #dee2e6);
+                background: var(--sg-bg-subtle);
+                border-bottom: 1px solid var(--sg-border);
             }
             .sglog-stat {
                 flex: 1 1 120px;
                 padding: 12px 16px;
                 text-align: center;
-                border-right: 1px solid var(--template-bg-dark-7, #dee2e6);
+                border-right: 1px solid var(--sg-border);
             }
             .sglog-stat:last-child { border-right: none; }
             .sglog-stat-value {
                 font-size: 22px;
                 font-weight: 700;
                 line-height: 1.2;
+                color: var(--sg-text);
             }
             .sglog-stat-label {
                 font-size: 11px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
-                opacity: 0.7;
+                color: var(--sg-text-muted);
                 margin-top: 2px;
             }
-            .sglog-stat-value.text-success { color: var(--success, #28a745) !important; }
-            .sglog-stat-value.text-warning { color: var(--warning, #ffc107) !important; }
-            .sglog-stat-value.text-danger { color: var(--danger, #dc3545) !important; }
-            .sglog-stat-value.text-info { color: var(--info, #17a2b8) !important; }
+            .sglog-stat-value.text-success { color: var(--bs-success, #198754) !important; }
+            .sglog-stat-value.text-warning { color: var(--bs-warning, #ffc107) !important; }
+            .sglog-stat-value.text-danger  { color: var(--bs-danger,  #dc3545) !important; }
+            .sglog-stat-value.text-info    { color: var(--bs-info,    #0dcaf0) !important; }
             /* SG status indicator */
             .sglog-sg-status {
                 display: inline-flex;
@@ -100,15 +135,15 @@ class LogviewerbuttonField extends FormField
                 border-radius: 50%;
                 display: inline-block;
             }
-            .sglog-sg-dot.active { background: var(--success, #28a745); }
-            .sglog-sg-dot.inactive { background: var(--warning, #ffc107); }
+            .sglog-sg-dot.active   { background: var(--bs-success, #198754); }
+            .sglog-sg-dot.inactive { background: var(--bs-warning, #ffc107); }
             /* Button bar */
             .sglog-toolbar {
                 display: flex;
                 gap: 8px;
                 padding: 10px 16px;
-                background: var(--template-bg-dark-3, #f8f9fa);
-                border-bottom: 1px solid var(--template-bg-dark-7, #dee2e6);
+                background: var(--sg-bg-subtle);
+                border-bottom: 1px solid var(--sg-border);
                 flex-wrap: wrap;
                 align-items: center;
             }
@@ -119,43 +154,53 @@ class LogviewerbuttonField extends FormField
                 display: flex;
                 gap: 8px;
                 padding: 8px 16px;
-                background: var(--template-bg-dark-3, #f8f9fa);
-                border-bottom: 1px solid var(--template-bg-dark-7, #dee2e6);
+                background: var(--sg-bg-subtle);
+                border-bottom: 1px solid var(--sg-border);
                 flex-wrap: wrap;
                 align-items: center;
                 font-size: 12px;
             }
-            .sglog-filters label { margin: 0; font-weight: 600; }
+            .sglog-filters label {
+                margin: 0;
+                font-weight: 600;
+                color: var(--sg-text);
+            }
             .sglog-filters select, .sglog-filters input {
                 padding: 3px 8px;
-                border: 1px solid var(--template-bg-dark-7, #dee2e6);
+                border: 1px solid var(--sg-border);
                 border-radius: 4px;
                 font-size: 12px;
-                background: var(--body-bg, #fff);
-                color: inherit;
+                background: var(--sg-bg-elevated);
+                color: var(--sg-text);
             }
             /* Log entries */
             .sglog-entries { max-height: 500px; overflow-y: auto; }
             .sglog-entry {
                 padding: 8px 16px;
-                border-bottom: 1px solid var(--template-bg-dark-7, #dee2e6);
+                border-bottom: 1px solid var(--sg-border);
                 cursor: pointer;
                 transition: background 0.1s;
             }
-            .sglog-entry:hover { background: var(--template-bg-dark-3, #f8f9fa); }
+            .sglog-entry:hover { background: var(--sg-bg-subtle); }
             .sglog-entry-header {
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 flex-wrap: wrap;
             }
-            .sglog-time { font-size: 11px; opacity: 0.6; font-family: monospace; white-space: nowrap; }
+            .sglog-time {
+                font-size: 11px;
+                color: var(--sg-text-muted);
+                font-family: monospace;
+                white-space: nowrap;
+            }
             .sglog-rid {
                 font-size: 10px;
                 font-family: monospace;
                 padding: 1px 5px;
                 border-radius: 3px;
-                background: var(--template-bg-dark-7, #e9ecef);
+                background: var(--sg-bg-elevated);
+                color: var(--sg-text);
             }
             .sglog-badge {
                 font-size: 10px;
@@ -165,17 +210,38 @@ class LogviewerbuttonField extends FormField
                 text-transform: uppercase;
                 letter-spacing: 0.3px;
             }
-            .sglog-badge-info { background: rgba(23,162,184,0.15); color: #17a2b8; }
-            .sglog-badge-error { background: rgba(220,53,69,0.15); color: #dc3545; }
-            .sglog-badge-warning { background: rgba(255,193,7,0.15); color: #856404; }
-            .sglog-badge-debug { background: rgba(108,117,125,0.15); color: #6c757d; }
-            .sglog-badge-event { background: rgba(26,115,232,0.12); color: #1a73e8; }
-            .sglog-elapsed { font-size: 11px; opacity: 0.5; }
+            /* Badge text colors — DARK variants by default (work on light backgrounds).
+               Dark mode overrides below switch to BRIGHT variants so they read against
+               Atum's dark navy chrome. */
+            .sglog-badge-info    { background: rgba(13, 202, 240, 0.15); color: #055160; }
+            .sglog-badge-error   { background: rgba(220, 53, 69, 0.15);  color: #58151c; }
+            .sglog-badge-warning { background: rgba(255, 193, 7, 0.15);  color: #664d03; }
+            .sglog-badge-debug   { background: rgba(108, 117, 125, 0.15); color: #495057; }
+            .sglog-badge-event   { background: rgba(13, 110, 253, 0.12);  color: #052c65; }
+            [data-bs-theme="dark"] .sglog-badge-info,
+            [data-color-scheme="dark"] .sglog-badge-info,
+            .theme-dark .sglog-badge-info    { color: #5dd5e8; }
+            [data-bs-theme="dark"] .sglog-badge-error,
+            [data-color-scheme="dark"] .sglog-badge-error,
+            .theme-dark .sglog-badge-error   { color: #ff8a99; }
+            [data-bs-theme="dark"] .sglog-badge-warning,
+            [data-color-scheme="dark"] .sglog-badge-warning,
+            .theme-dark .sglog-badge-warning { color: #ffd54f; }
+            [data-bs-theme="dark"] .sglog-badge-debug,
+            [data-color-scheme="dark"] .sglog-badge-debug,
+            .theme-dark .sglog-badge-debug   { color: #adb5bd; }
+            [data-bs-theme="dark"] .sglog-badge-event,
+            [data-color-scheme="dark"] .sglog-badge-event,
+            .theme-dark .sglog-badge-event   { color: #6c9ef0; }
+            .sglog-elapsed {
+                font-size: 11px;
+                color: var(--sg-text-muted);
+            }
             .sglog-entry-details {
                 display: none;
                 margin-top: 8px;
                 padding: 8px 12px;
-                background: var(--template-bg-dark-3, #f8f9fa);
+                background: var(--sg-bg-subtle);
                 border-radius: 4px;
                 font-family: monospace;
                 font-size: 12px;
@@ -183,35 +249,30 @@ class LogviewerbuttonField extends FormField
                 word-break: break-all;
                 max-height: 200px;
                 overflow-y: auto;
+                color: var(--sg-text);
             }
             .sglog-entry-details.open { display: block; }
-            /* JSON highlighting (works in both light/dark) */
-            .sglog-json-key { color: #0550ae; font-weight: 600; }
-            .sglog-json-string { color: #0a3069; }
-            .sglog-json-number { color: #0550ae; }
-            .sglog-json-bool { color: #cf222e; }
-            @media (prefers-color-scheme: dark) {
-                .sglog-json-key { color: #79c0ff; }
-                .sglog-json-string { color: #a5d6ff; }
-                .sglog-json-number { color: #79c0ff; }
-                .sglog-json-bool { color: #ff7b72; }
-            }
+            /* JSON highlighting — use BS text-emphasis vars so they auto-switch in dark mode */
+            .sglog-json-key    { color: var(--bs-primary-text-emphasis, #0550ae); font-weight: 600; }
+            .sglog-json-string { color: var(--bs-success-text-emphasis, #0a3069); }
+            .sglog-json-number { color: var(--bs-primary-text-emphasis, #0550ae); }
+            .sglog-json-bool   { color: var(--bs-danger-text-emphasis,  #cf222e); }
             /* Status messages */
             .sglog-status {
                 padding: 30px 16px;
                 text-align: center;
-                opacity: 0.6;
+                color: var(--sg-text-muted);
             }
             /* Pagination / show more */
             .sglog-footer {
                 padding: 8px 16px;
                 text-align: center;
-                border-top: 1px solid var(--template-bg-dark-7, #dee2e6);
-                background: var(--template-bg-dark-3, #f8f9fa);
+                border-top: 1px solid var(--sg-border);
+                background: var(--sg-bg-subtle);
                 font-size: 12px;
             }
             .sglog-footer .btn { font-size: 12px; padding: 3px 14px; }
-            /* Alert for test/clear results */
+            /* Alert for test/clear results — also theme-adaptive */
             .sglog-alert {
                 margin: 8px 16px;
                 padding: 8px 12px;
@@ -219,9 +280,9 @@ class LogviewerbuttonField extends FormField
                 font-size: 12px;
                 display: none;
             }
-            .sglog-alert.alert-success { background: rgba(40,167,69,0.12); color: #155724; border: 1px solid rgba(40,167,69,0.2); }
-            .sglog-alert.alert-danger { background: rgba(220,53,69,0.12); color: #721c24; border: 1px solid rgba(220,53,69,0.2); }
-            .sglog-alert.alert-info { background: rgba(23,162,184,0.12); color: #0c5460; border: 1px solid rgba(23,162,184,0.2); }
+            .sglog-alert.alert-success { background: var(--bs-success-bg-subtle, rgba(40,167,69,0.12)); color: var(--bs-success-text-emphasis, #0a3622); border: 1px solid var(--bs-success-border-subtle, rgba(40,167,69,0.2)); }
+            .sglog-alert.alert-danger  { background: var(--bs-danger-bg-subtle,  rgba(220,53,69,0.12)); color: var(--bs-danger-text-emphasis,  #58151c); border: 1px solid var(--bs-danger-border-subtle,  rgba(220,53,69,0.2)); }
+            .sglog-alert.alert-info    { background: var(--bs-info-bg-subtle,    rgba(23,162,184,0.12)); color: var(--bs-info-text-emphasis,   #055160); border: 1px solid var(--bs-info-border-subtle,    rgba(23,162,184,0.2)); }
         </style>
 
         <div class="sglog-dashboard" id="sglog-dashboard">
@@ -263,7 +324,7 @@ class LogviewerbuttonField extends FormField
                 <button type="button" class="btn btn-sm btn-primary" onclick="sglogRefresh()">
                     <span class="icon-loop" aria-hidden="true"></span> {$t['refresh']}
                 </button>
-                <button type="button" class="btn btn-sm btn-secondary" onclick="window.open('{$viewerUrl}','_blank')">
+                <button type="button" class="btn btn-sm btn-secondary" id="sglog-open-full-viewer-btn">
                     <span class="icon-out-2" aria-hidden="true"></span> {$t['viewFull']}
                 </button>
                 <a href="{$downloadUrl}" class="btn btn-sm btn-success">
@@ -313,20 +374,28 @@ class LogviewerbuttonField extends FormField
 
         <script>
         (function() {
-            var BASE = '{$viewUrl}';
-            var STATS_URL = '{$statsUrl}';
-            var TEST_URL = '{$testUrl}';
-            var CLEAR_URL = '{$clearUrl}';
+            var BASE       = {$viewUrlJs};
+            var STATS_URL  = {$statsUrlJs};
+            var TEST_URL   = {$testUrlJs};
+            var CLEAR_URL  = {$clearUrlJs};
+            var VIEWER_URL = {$viewerUrlJs};
             var entries = [];
             var totalEntries = 0;
             var currentLimit = 25;
             var T = {
-                noEntries: '{$t['noEntries']}',
-                loading: '{$t['loading']}',
-                clearConfirm: '{$t['clearConfirm']}',
-                showMore: '{$t['showMore']}',
-                showLess: '{$t['showLess']}'
+                noEntries:    {$noEntriesJs},
+                loading:      {$loadingJs},
+                clearConfirm: {$clearConfirmJs},
+                showMore:     {$showMoreJs},
+                showLess:     {$showLessJs}
             };
+
+            // Open Full Viewer button — bound via JS instead of inline onclick so URL never
+            // flows through HTML attribute decoding into the JS context.
+            var openBtn = document.getElementById('sglog-open-full-viewer-btn');
+            if (openBtn) {
+                openBtn.addEventListener('click', function () { window.open(VIEWER_URL, '_blank', 'noopener,noreferrer'); });
+            }
 
             window.sglogRefresh = function() {
                 currentLimit = 25;
@@ -496,7 +565,11 @@ class LogviewerbuttonField extends FormField
                 return d.innerHTML;
             }
 
-            // Init on load
+            // Detect dark theme by sampling the page's actual background luminance.
+            // Belt-and-suspenders fallback when neither prefers-color-scheme nor
+            // [data-bs-theme="dark"] matches (e.g. Atum using a non-standard signal).
+            // Init on load — no custom dark detection needed; CSS handles theming via
+            // Bootstrap 5.3 --bs-* variables + Atum's [data-bs-theme="dark"] toggle.
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', sglogRefresh);
             } else {

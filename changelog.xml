@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Joomla extension changelog feed for plg_system_sgcache.
+
+    Fetched by Joomla's extension manager when the user clicks the version-number
+    badge next to the installed plugin, AND by the update flow when an admin
+    checks System → Manage → Update. Joomla parses this as XML, NOT as HTML.
+
+    Format: <changelogs> root with one <changelog> per version, identified by
+    <element>+<type>+<version>. Categories:
+    <security> <fix> <language> <addition> <change> <remove> <maintenance> <note>.
+
+    Maintenance: when shipping a new version, add a new <changelog> block at the
+    top of this file and bump CHANGELOG.md + CHANGELOG.html in lockstep.
+-->
+<changelogs>
+
+    <changelog>
+        <element>sgcache</element>
+        <type>plugin</type>
+        <folder>system</folder>
+        <version>2.2.1</version>
+        <fix>
+            <item>Joomla's no-cache headers blocked SiteGround's cache: even with the cookie removed, every page went out with Cache-Control: no-store, no-cache and a past Expires date, and SiteGround's Dynamic Cache won't store a response carrying Cache-Control: no-cache. Cacheable anonymous pages are now marked cacheable in Joomla and the session limiter's no-cache headers are removed; Joomla then sends a 15-minute Expires instead. Logged-in, excluded and cookie-carrying pages keep their no-cache headers.</item>
+            <item>Pages that still carried a cookie were marked cacheable. 2.2.0 sent X-Cache-Enabled: True before it tried to strip Set-Cookie, and stripped it in onAfterRender. If the suppression setting was off, or another extension set a cookie after render, the page claimed to be cacheable with a cookie attached and SiteGround skipped it (SKIP_CACHE_SET_COOKIE). Cookie stripping now runs in onBeforeRespond at the lowest priority, after every other extension, and X-Cache-Enabled: True is only sent when no Set-Cookie is left. Otherwise it sends False.</item>
+            <item>Silent failure: when the cookie can't be removed, the plugin now logs a set_cookie_not_stripped warning with the reason, and an onAfterRespond self-check logs cache_claimed_with_cookie if a cookie still went out with a cacheable page. Verbose logging records why each page was or wasn't cached.</item>
+            <item>Pages with forms were cached. Any page carrying a Joomla form token (Convert Forms, contact forms, login modules) is now left uncached and keeps its session cookie, so the token still matches the visitor's session when they submit. Before, these pages relied on being excluded by hand.</item>
+        </fix>
+    </changelog>
+
+    <changelog>
+        <element>sgcache</element>
+        <type>plugin</type>
+        <folder>system</folder>
+        <version>2.2.0</version>
+        <addition>
+            <item>Logo + branding rolled out across the plugin: cobalt cloud + orange bolt corner badge (Tabler Icons base, family pattern matching cs-articles-module-maxxed / cs-template-integrity / cs-mcp-for-j). Visible in the new Status panel hero, the Getting Started welcome card, the About card, and the post-install card.</item>
+            <item>New "Getting Started" tab — quick-start checklist and tips for first-time installs so new admins see what to do next without searching.</item>
+            <item>New "About" tab — version, attribution, support links (Cybersalt extensions catalogue, GitHub source, GitHub issues), license footer.</item>
+            <item>New live Status panel at the top of the Cache tab — at-a-glance tiles for SiteGround Hosting detection, Cache Daemon reachability (live AJAX test), Set-Cookie suppression active/inactive, and Last Test timestamp. One-click "Run Test" button verifies the SG socket.</item>
+            <item>Post-install card upgraded to the Cybersalt-branded pattern from Joomla-Brain JOOMLA-EXTENSION-WISHLIST: logo + title + description + dashboard link + vendor / support links, theme-aware light/dark via Atum's data-bs-theme + data-color-scheme selectors.</item>
+            <item>"Suppress Session Cookie on Cacheable Pages" toggle in the Advanced tab — defaults ON. Strips Joomla's Set-Cookie header on cacheable anonymous GET responses so SiteGround's edge can actually cache them. Without this, SG's edge returned X-Proxy-Cache-Info: SKIP_CACHE_SET_COOKIE on every guest hit and the dynamic cache was effectively a no-op for first-visit anonymous traffic including search-engine crawlers. Architectural gap that had been latent since v1.0.0.</item>
+        </addition>
+        <change>
+            <item>Plugin name in the Joomla plugin manager listing changed from "System - SiteGround Cache" to "System - Cybersalt SiteGround Cache" so the Cybersalt origin is visible at a glance.</item>
+            <item>Update server moved from raw.githubusercontent.com to the Cybersalt Release Manager (cybersalt.com / com_csreleasemanager api.updatexml endpoint). Existing v2.1.0 sites discover this release through the old GitHub channel one last time; from v2.2.0 onwards they check the Cybersalt endpoint directly. SHA256 verification by Joomla's updater is unchanged.</item>
+            <item>changelogurl moved from CHANGELOG.html (HTML) to changelog.xml (Joomla schema) so the extension manager modal renders correctly when an admin clicks the version badge.</item>
+        </change>
+        <fix>
+            <item>Inline log viewer dashboard themes correctly in BOTH Atum light AND dark mode. Earlier builds either rendered white-text-on-white (light mode with stale prefers-color-scheme override) or dark-text-on-dark (dark mode with non-switching --bs-tertiary-bg fallback). Now uses a scoped CSS-variable theming model keyed off Joomla's actual signals — data-bs-theme="dark" and data-color-scheme="dark" — per JOOMLA5-UI-PATTERNS.md.</item>
+            <item>Log entry badges (INFO / DEBUG / WARNING / ERROR / EVENT) switch text colors between dark variants (light mode) and bright variants (dark mode) so they read on both backgrounds.</item>
+            <item>About tab Resources link cards switch text from cobalt (light mode) to Cybersalt orange (dark mode) so they read against Atum's dark navy chrome.</item>
+            <item>Hero card logos no longer disappear into the cobalt gradient — each is now placed on a white circular knockout with a subtle drop shadow.</item>
+        </fix>
+        <security>
+            <item>Bug-report / support link in the About tab points at the GitHub Issues tracker rather than an unverified contact form. Removes a 404'ing footer link that previously led nowhere.</item>
+        </security>
+        <maintenance>
+            <item>Removed the custom JavaScript dark-mode luminance detector that walked the DOM trying to guess theme from body bg color. Atum's theme attribute is authoritative; we trust it now and the JS no longer ships.</item>
+        </maintenance>
+    </changelog>
+
+    <changelog>
+        <element>sgcache</element>
+        <type>plugin</type>
+        <folder>system</folder>
+        <version>2.1.0</version>
+        <security>
+            <item>Hostname validation in SiteToolsClient before sending to SiteGround daemon (alphanumeric, hyphens, dots only).</item>
+            <item>Path validation in SiteToolsClient — defense-in-depth — ensures only safe characters reach the UNIX socket.</item>
+            <item>Tightened purge path regex — removed '%' from allowed characters to prevent URL-encoding attacks.</item>
+            <item>Viewer template AJAX URL now uses json_encode() instead of raw PHP echo in JavaScript string context (XSS hardening).</item>
+        </security>
+        <change>
+            <item>Joomla 6 added to update-server target platform regex.</item>
+        </change>
+    </changelog>
+
+    <changelog>
+        <element>sgcache</element>
+        <type>plugin</type>
+        <folder>system</folder>
+        <version>2.0.0</version>
+        <addition>
+            <item>Admin toolbar "Purge SG Cache" button matching native Atum styling. Simple mode (purge all) or dropdown mode with custom path shortcuts.</item>
+            <item>Inline log viewer dashboard embedded in plugin settings with stats row, filters, expandable JSON entries, and action buttons.</item>
+            <item>Standalone dark-themed full-page log viewer accessible via "Open Full Viewer" button.</item>
+            <item>Debug panel — collapsible footer on admin pages showing real-time cache operations.</item>
+            <item>Verbose logging toggle — switch between production mode (bypasses/purges/errors only) and verbose mode (every frontend page visit).</item>
+            <item>Component exclusion selector — searchable multi-select dropdown listing all installed components, using Joomla's native list-fancy-select layout.</item>
+            <item>Non-SiteGround safeguards — warning banner on admin pages when not hosted on SiteGround, all cache operations gracefully disabled.</item>
+            <item>Joomla update server — automatic update notifications via Joomla's built-in updater with SHA256 checksum verification.</item>
+            <item>Multilingual support across 15 languages: English, Dutch, German, Spanish, French, Italian, Portuguese (BR), Russian, Polish, Japanese, Chinese (Simplified), Turkish, Greek, Czech, Swedish.</item>
+            <item>Changelog tab — full version history viewable directly in plugin settings.</item>
+        </addition>
+        <change>
+            <item>Logging system rewritten as JSON lines format with request ID correlation, auto-rotation, thread-safe writes.</item>
+            <item>Socket-level logging exposes full visibility into SiteGround daemon communication (connect, send, response).</item>
+            <item>Smart purge queue gained a shutdown-function fallback so cache always purges even on admin save+redirect.</item>
+        </change>
+        <security>
+            <item>AJAX permission check — all AJAX endpoints verify core.manage authorization in addition to admin client check.</item>
+            <item>Purge path validation — whitelist regex rejects invalid characters in manual purge paths.</item>
+            <item>Self-uninstall safety — extension event handlers wrapped in try/catch to prevent "Class not found" errors during plugin removal.</item>
+        </security>
+        <fix>
+            <item>Uninstall error fixed — plugin is now disabled in preflight() before uninstall to prevent "Class not found" errors when events fire on a half-removed plugin.</item>
+            <item>Custom field types — addfieldprefix added to manifest fields tag so they load correctly.</item>
+            <item>Language strings — globally-needed strings moved to .sys.ini and loadLanguage() used so toolbar/notice strings appear on every admin page.</item>
+            <item>Purge queue flushing — register_shutdown_function() fallback covers admin POST+redirect requests where onAfterRespond doesn't fire.</item>
+            <item>Toolbar button overlap — injected into Atum's .header-items container with native header-item-content structure.</item>
+        </fix>
+    </changelog>
+
+    <changelog>
+        <element>sgcache</element>
+        <type>plugin</type>
+        <folder>system</folder>
+        <version>1.0.0</version>
+        <addition>
+            <item>Dynamic cache purging — automatically purges SiteGround cache when articles, categories, or menu items are saved, deleted, or state-changed.</item>
+            <item>Smart purge queue — collects URLs during request and purges efficiently; performs full flush when URL count exceeds configurable threshold.</item>
+            <item>HTTP cache headers — sets X-Cache-Enabled and optional Vary: User-Agent headers for SiteGround's reverse proxy.</item>
+            <item>URL and component exclusions — configure paths and components that should bypass caching.</item>
+            <item>Manual purge button — one-click full cache purge from plugin settings.</item>
+            <item>Logged-in user handling — option to disable caching for authenticated users.</item>
+            <item>Post-install detection — warns if SiteGround hosting is not detected during installation.</item>
+        </addition>
+    </changelog>
+
+</changelogs>

@@ -2,6 +2,28 @@
     <h1>Changelog - SiteGround Cache Plugin for Joomla</h1>
 
     <div class="version">
+        <h2>🚀 Version 2.2.1 <span class="version-badge">October 2026</span></h2>
+
+        <h3>🐛 Bug Fixes</h3>
+        <ul>
+            <li><strong>Joomla's no-cache headers blocked SiteGround's cache</strong>: even with the cookie removed, every page still went out with <code>Cache-Control: no-store, no-cache</code> and an <code>Expires</code> date in the past (Joomla's default for pages not marked cacheable, plus PHP's session cache limiter). SiteGround's Dynamic Cache won't store a response carrying <code>Cache-Control: no-cache</code>, so pages were never cached. Cacheable anonymous pages are now marked cacheable in Joomla and the session limiter's no-cache headers are removed. Joomla then sends a 15-minute <code>Expires</code> instead. Logged-in, excluded and cookie-carrying pages keep their no-cache headers.</li>
+            <li><strong>Pages that still carried a cookie were marked cacheable</strong>: 2.2.0 sent <code>X-Cache-Enabled: True</code> before it tried to strip <code>Set-Cookie</code>, and did the stripping in <code>onAfterRender</code>. If the suppression setting was off, or another extension set a cookie after render, the page went out claiming to be cacheable with a cookie attached, and SiteGround skipped it (<code>SKIP_CACHE_SET_COOKIE</code>). Cookie stripping now runs in <code>onBeforeRespond</code> at the lowest priority, after every other extension has finished, and <code>X-Cache-Enabled: True</code> is only sent when no <code>Set-Cookie</code> is left on the response. Otherwise it sends <code>False</code>.</li>
+            <li><strong>Silent failure</strong>: when the cookie can't be removed (headers already sent, or the cookie is in Joomla's own header list) the plugin now logs a <code>set_cookie_not_stripped</code> warning with the reason. An <code>onAfterRespond</code> self-check logs <code>cache_claimed_with_cookie</code> if a cookie still went out with a cacheable page. Verbose logging records why each page was or wasn't cached.</li>
+            <li><strong>Pages with forms were cached</strong>: any page carrying a Joomla form token (Convert Forms, contact forms, login modules) is now left uncached and keeps its session cookie, so the token still matches the visitor's session when they submit. Before, these pages relied on being excluded by hand.</li>
+        </ul>
+    </div>
+
+    <div class="version">
+        <h2>🚀 Version 2.2.0 <span class="version-badge">June 2026</span></h2>
+
+        <h3>🔧 Improvements</h3>
+        <ul>
+            <li><strong>Set-Cookie suppression on cacheable anonymous responses</strong>: Joomla starts a session for every guest, which adds a <code>Set-Cookie</code> to the response. SiteGround's edge skips caching any response with <code>Set-Cookie</code> (<code>X-Proxy-Cache-Info: SKIP_CACHE_SET_COOKIE</code>), so the dynamic cache was effectively a no-op for first-visit anonymous traffic — including search engine crawlers. The plugin now strips <code>Set-Cookie</code> headers on cacheable anonymous GET responses (in <code>onAfterRender</code>, after the <code>X-Cache-Enabled: True</code> decision), so SiteGround's edge can actually cache. URL and component exclusions still receive untouched sessions for forms / CSRF / login. New <em>"Suppress Session Cookie on Cacheable Pages"</em> toggle in the Advanced tab — defaults ON.</li>
+            <li><strong>Dark-mode contrast fix in inline log viewer</strong>: The stats row labels, timestamp and elapsed-ms text, request-ID badges, warning/debug badges, and success/danger/info alert messages all used <code>opacity</code> or hardcoded dark colors that became unreadable when Joomla's admin (Atum) was in dark mode. Added explicit dark-mode color overrides triggered by either <code>prefers-color-scheme: dark</code> or Joomla's Bootstrap-5.3 <code>[data-bs-theme="dark"]</code> toggle.</li>
+        </ul>
+    </div>
+
+    <div class="version">
         <h2>🚀 Version 2.1.0 <span class="version-badge">April 2026</span></h2>
 
         <h3>🔍 Security</h3>

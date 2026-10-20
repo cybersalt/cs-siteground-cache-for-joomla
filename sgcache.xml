@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="plugin" group="system" method="upgrade">
     <name>PLG_SYSTEM_SGCACHE</name>
-    <version>2.1.0</version>
-    <creationDate>2026-04-03</creationDate>
+    <version>2.2.1</version>
+    <creationDate>2026-06-15</creationDate>
     <author>Cybersalt</author>
     <authorEmail>support@cybersalt.com</authorEmail>
     <authorUrl>https://cybersalt.com</authorUrl>
@@ -18,6 +18,10 @@
         <folder>tmpl</folder>
         <filename>CHANGELOG.html</filename>
     </files>
+
+    <media destination="plg_system_sgcache" folder="media">
+        <folder>images</folder>
+    </media>
 
     <languages>
         <language tag="en-GB">language/en-GB/plg_system_sgcache.ini</language>
@@ -52,15 +56,22 @@
         <language tag="sv-SE">language/sv-SE/plg_system_sgcache.sys.ini</language>
     </languages>
 
-    <changelogurl>https://raw.githubusercontent.com/cybersalt/cs-siteground-cache-for-joomla/main/CHANGELOG.html</changelogurl>
+    <changelogurl>https://raw.githubusercontent.com/cybersalt/cs-siteground-cache-for-joomla/main/changelog.xml</changelogurl>
 
     <updateservers>
-        <server type="extension" name="SiteGround Cache Updates">https://raw.githubusercontent.com/cybersalt/cs-siteground-cache-for-joomla/main/updates.xml</server>
+        <server type="extension" name="Cybersalt SiteGround Cache Updates">https://www.cybersalt.com/index.php?option=com_csreleasemanager&amp;task=api.updatexml&amp;format=raw&amp;element=sgcache</server>
     </updateservers>
 
     <config>
         <fields name="params" addfieldprefix="Cybersalt\Plugin\System\SgCache\Field">
             <fieldset name="basic" label="PLG_SYSTEM_SGCACHE_FIELDSET_CACHE">
+                <field
+                    name="status_dashboard"
+                    type="statusdashboard"
+                    label=""
+                    description=""
+                />
+
                 <field
                     name="enable_dynamic_cache"
                     type="radio"
@@ -113,6 +124,16 @@
                     description="PLG_SYSTEM_SGCACHE_EXCLUDED_COMPONENTS_DESC"
                     multiple="true"
                     layout="joomla.form.field.list-fancy-select"
+                    default="com_users,com_finder,com_contact,com_privacy"
+                />
+            </fieldset>
+
+            <fieldset name="getting_started" label="PLG_SYSTEM_SGCACHE_FIELDSET_GETTING_STARTED">
+                <field
+                    name="getting_started_panel"
+                    type="gettingstarted"
+                    label=""
+                    description=""
                 />
             </fieldset>
 
@@ -237,11 +258,31 @@
                 </field>
 
                 <field
+                    name="session_handling_note"
+                    type="note"
+                    label=""
+                    description="PLG_SYSTEM_SGCACHE_SESSION_HANDLING_NOTE"
+                />
+
+                <field
                     name="cache_logged_in"
                     type="radio"
                     label="PLG_SYSTEM_SGCACHE_CACHE_LOGGED_IN"
                     description="PLG_SYSTEM_SGCACHE_CACHE_LOGGED_IN_DESC"
                     default="0"
+                    class="btn-group"
+                    layout="joomla.form.field.radio.switcher"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
+                <field
+                    name="suppress_session_cookie"
+                    type="radio"
+                    label="PLG_SYSTEM_SGCACHE_SUPPRESS_SESSION_COOKIE"
+                    description="PLG_SYSTEM_SGCACHE_SUPPRESS_SESSION_COOKIE_DESC"
+                    default="1"
                     class="btn-group"
                     layout="joomla.form.field.radio.switcher"
                 >
@@ -263,6 +304,15 @@
                     type="changelogviewer"
                     label="PLG_SYSTEM_SGCACHE_CHANGELOG"
                     description="PLG_SYSTEM_SGCACHE_CHANGELOG_DESC"
+                />
+            </fieldset>
+
+            <fieldset name="about" label="PLG_SYSTEM_SGCACHE_FIELDSET_ABOUT">
+                <field
+                    name="about_panel"
+                    type="about"
+                    label=""
+                    description=""
                 />
             </fieldset>
         </fields>
