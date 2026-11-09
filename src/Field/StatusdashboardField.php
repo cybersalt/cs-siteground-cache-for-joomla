@@ -27,8 +27,23 @@ class StatusdashboardField extends FormField
         // Defense-in-depth: encode the URL via json_encode() for safe JS-string-context
         // interpolation (matches the v2.1.0 tmpl/viewer.php hardening pattern).
         $testUrlJs = json_encode($testUrl, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES);
+        $jsFlags   = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES;
+        $ajaxBase  = Uri::base() . 'index.php?option=com_ajax&plugin=sgcache&group=system&format=raw&' . $token . '=1&action=';
+        $selfTestUrlJs  = json_encode($ajaxBase . 'selftest', $jsFlags);
+        $decisionsUrlJs = json_encode($ajaxBase . 'decisions', $jsFlags);
+        $stringsJs      = json_encode([
+            'running'  => html_entity_decode(Text::_('PLG_SYSTEM_SGCACHE_STATUS_SELFTEST_RUNNING'), ENT_QUOTES, 'UTF-8'),
+            'home'     => Text::_('PLG_SYSTEM_SGCACHE_STATUS_SELFTEST_HOME'),
+            'article'  => Text::_('PLG_SYSTEM_SGCACHE_STATUS_SELFTEST_ARTICLE'),
+            'details'  => Text::_('PLG_SYSTEM_SGCACHE_STATUS_SELFTEST_DETAILS'),
+            'none'     => Text::_('PLG_SYSTEM_SGCACHE_STATUS_RECENT_NONE'),
+            'recent'   => Text::_('PLG_SYSTEM_SGCACHE_STATUS_RECENT_VALUE'),
+            'failed'   => Text::_('PLG_SYSTEM_SGCACHE_PURGE_FAILED'),
+        ], $jsFlags);
+        $selfTestBtn = Text::_('PLG_SYSTEM_SGCACHE_STATUS_SELFTEST_BTN');
+        $labelRecent = Text::_('PLG_SYSTEM_SGCACHE_STATUS_LABEL_RECENT');
         // Cache-bust the logo on plugin updates so browsers fetch the new SVG
-        $logoVer = '2.2.2';
+        $logoVer = '2.3.0';
         $logoUrl = Uri::root(true) . '/media/plg_system_sgcache/images/logo.svg?v=' . $logoVer;
 
         $isSiteGround = SiteToolsClient::isSiteGround();
@@ -133,6 +148,12 @@ class StatusdashboardField extends FormField
             .sgstatus-tile.ok   .sgstatus-tile-dot { background: var(--bs-success, #198754); }
             .sgstatus-tile.warn .sgstatus-tile-dot { background: var(--bs-warning, #ffc107); }
             .sgstatus-tile.fail .sgstatus-tile-dot { background: var(--bs-danger,  #dc3545); }
+            .sgstatus-card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+            #sgstatus-selftest:empty, #sgstatus-warning:empty { display: none; }
+            #sgstatus-selftest .sgstatus-result { margin-bottom: 8px; }
+            #sgstatus-selftest .sgstatus-result-url { font-size: 12px; word-break: break-all; opacity: .8; }
+            #sgstatus-selftest details { margin-top: 4px; font-size: 12px; }
+            #sgstatus-selftest pre { margin: 4px 0 0; white-space: pre-wrap; font-size: 11px; }
         </style>
 
         <div class="sgstatus-card">
@@ -145,8 +166,12 @@ class StatusdashboardField extends FormField
             </div>
             <div class="sgstatus-card-actions">
                 <button type="button" class="btn btn-sm" onclick="sgstatusRunTest()">{$testBtn}</button>
+                <button type="button" class="btn btn-sm" id="sgstatus-selftest-btn" onclick="sgstatusSelfTest()">{$selfTestBtn}</button>
             </div>
         </div>
+
+        <div id="sgstatus-warning"></div>
+        <div id="sgstatus-selftest"></div>
 
         <div class="sgstatus-grid" id="sgstatus-grid">
             <div class="sgstatus-tile {$sgStatusClass}">
@@ -161,6 +186,10 @@ class StatusdashboardField extends FormField
                 <div class="sgstatus-tile-label">{$labelCookie}</div>
                 <div class="sgstatus-tile-value"><span class="sgstatus-tile-dot"></span>{$checking}</div>
             </div>
+            <div class="sgstatus-tile" id="sgstatus-tile-recent">
+                <div class="sgstatus-tile-label">{$labelRecent}</div>
+                <div class="sgstatus-tile-value"><span class="sgstatus-tile-dot"></span>{$checking}</div>
+            </div>
             <div class="sgstatus-tile" id="sgstatus-tile-lasttest">
                 <div class="sgstatus-tile-label">{$labelLastTest}</div>
                 <div class="sgstatus-tile-value">{$never}</div>
@@ -170,6 +199,70 @@ class StatusdashboardField extends FormField
         <script>
         (function() {
             var TEST_URL = {$testUrlJs};
+            var SELFTEST_URL = {$selfTestUrlJs};
+            var DECISIONS_URL = {$decisionsUrlJs};
+            var S = {$stringsJs};
+
+            function el(tag, cls, text) {
+                var e = document.createElement(tag);
+                if (cls) e.className = cls;
+                if (text !== undefined) e.textContent = text;
+                return e;
+            }
+
+            function showDecisions(d) {
+                var tile = document.getElementById('sgstatus-tile-recent');
+                var warn = document.getElementById('sgstatus-warning');
+                if (!tile || !d) return;
+                var v = tile.querySelector('.sgstatus-tile-value');
+                tile.classList.remove('ok', 'warn', 'fail');
+                v.textContent = '';
+                v.appendChild(el('span', 'sgstatus-tile-dot'));
+                if (!d.total) {
+                    v.appendChild(document.createTextNode(S.none));
+                } else {
+                    tile.classList.add(d.warning ? 'warn' : 'ok');
+                    v.appendChild(document.createTextNode(S.recent.replace('%1\$d', d.cached).replace('%2\$d', d.total)));
+                }
+                warn.textContent = '';
+                if (d.warning) warn.appendChild(el('div', 'alert alert-warning', d.warning));
+            }
+
+            window.sgstatusSelfTest = function() {
+                var box = document.getElementById('sgstatus-selftest');
+                var btn = document.getElementById('sgstatus-selftest-btn');
+                box.textContent = '';
+                box.appendChild(el('div', 'alert alert-info', S.running));
+                btn.disabled = true;
+                fetch(SELFTEST_URL).then(function(r) { return r.json(); }).then(function(d) {
+                    btn.disabled = false;
+                    box.textContent = '';
+                    if (!d.success) { box.appendChild(el('div', 'alert alert-warning', d.message || S.failed)); return; }
+                    (d.rows || []).forEach(function(row) {
+                        var cls = row.status === 'ok' ? 'alert-success' : (row.status === 'fail' ? 'alert-danger' : 'alert-warning');
+                        var a = el('div', 'alert sgstatus-result ' + cls);
+                        var head = el('div');
+                        head.appendChild(el('strong', '', (row.kind === 'home' ? S.home : S.article) + ': '));
+                        head.appendChild(document.createTextNode(row.message));
+                        a.appendChild(head);
+                        a.appendChild(el('div', 'sgstatus-result-url', row.url));
+                        var det = el('details');
+                        det.appendChild(el('summary', '', S.details));
+                        det.appendChild(el('pre', '', JSON.stringify({ first: row.first, second: row.second }, null, 2)));
+                        a.appendChild(det);
+                        box.appendChild(a);
+                    });
+                    showDecisions(d.decisions);
+                }).catch(function() {
+                    btn.disabled = false;
+                    box.textContent = '';
+                    box.appendChild(el('div', 'alert alert-danger', S.failed));
+                });
+            };
+
+            function loadDecisions() {
+                fetch(DECISIONS_URL).then(function(r) { return r.json(); }).then(function(d) { showDecisions(d.decisions); }).catch(function() {});
+            }
 
             function setTile(id, cls, text) {
                 var el = document.getElementById(id);
@@ -190,10 +283,10 @@ class StatusdashboardField extends FormField
             window.sgstatusRunTest = function() {
                 setTile('sgstatus-tile-socket', '', 'Testing…');
                 fetch(TEST_URL).then(function(r) { return r.json(); }).then(function(d) {
-                    if (d.siteground && d.bytes_written > 0) {
+                    if (d.siteground && d.daemon) {
                         setTile('sgstatus-tile-socket', 'ok', 'Reachable');
                     } else if (d.siteground) {
-                        setTile('sgstatus-tile-socket', 'warn', 'Detected, no write');
+                        setTile('sgstatus-tile-socket', 'fail', 'Not reachable');
                     } else {
                         setTile('sgstatus-tile-socket', 'warn', 'Not on SiteGround');
                     }
@@ -217,6 +310,7 @@ class StatusdashboardField extends FormField
             function init() {
                 readSuppressSetting();
                 sgstatusRunTest();
+                loadDecisions();
             }
 
             if (document.readyState === 'loading') {

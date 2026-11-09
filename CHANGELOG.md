@@ -1,5 +1,43 @@
 # Changelog
 
+## 🚀 Version 2.3.0 (November 2026)
+
+### 🔒 Security
+- **Cached pages never carry anything of one visitor's**: a page is only stored when it was rendered for a visitor who arrived without a Joomla session cookie, so a cart, a form refilled after an error or anything else kept in a session can't end up in the shared copy. First visits and crawlers fill the cache, and every visitor, returning ones included, is still served from it. Pages showing a queued message ("Thank you for subscribing") or the visitor's own IP address (form smart tags, "your IP is" modules) are never cached either.
+- **No visitor's form token in a cached page**: token inputs on cached pages get a placeholder name and the token in Joomla's script options (`csrf.token`) is emptied; each visitor's browser fetches its own token when they use a form.
+- **The log can't be downloaded any more**: before 2.3.0 the log was a plain file in `/logs` under the site root, so with verbose logging on anyone who guessed the URL could read the visited URLs. It's now `sgcache.log.php` in Joomla's own log folder and starts with a line that stops a browser from reading it, like Joomla's own logs; rotated copies too. Updating moves the existing entries across and deletes the old file. The new dashboard bookkeeping is stored the same way and holds only times and reason codes, never URLs, query strings, IP addresses or user agents. Uninstalling removes both files.
+
+### 🐛 Bug Fixes
+- **A feed could be cached and served as the home page**: the plugin marked any cookie-free response as cacheable, including RSS/Atom feeds, JSON and raw output, and error pages. When a crawler requested `/?fbclid=…&format=feed`, SiteGround stored the feed under the home page (it appears to drop the query string from its cache key when a tracking parameter is present), and visitors to `/` got raw feed XML until it expired. Only a normal HTML page with HTTP status 200 is marked cacheable now ([#3](https://github.com/cybersalt/cs-siteground-cache-for-joomla/issues/3)).
+- **Query strings**: a page whose URL has query parameters is no longer cached, except for marketing tracking parameters (`utm_*`, `fbclid`, `gclid`, `msclkid` and similar), which don't change the page. See *Cacheable Query Parameters* below to allow others.
+- **Form detection failed with Joomla's Gzip Page Compression on**: Joomla compresses the page before the plugin's last check runs, so the form-token check saw compressed bytes and missed every form. Those pages were cached with one visitor's token, and their forms then failed for everyone else. The plugin now reads (and if needed rewrites) the decompressed page.
+- **J6: the header purge dropdown showed an empty pill**: Joomla 6's admin template draws no caret on a split button, so nothing showed it opens a menu. The plugin now draws its own ([#2](https://github.com/cybersalt/cs-siteground-cache-for-joomla/issues/2)).
+- **The Cache Daemon tile said "Reachable" without checking**: it only tested that the log file could be written. It now opens a connection to SiteGround's cache socket and says *Not reachable* when that fails.
+- **Every scheduled task run purged the whole cache**: Joomla's scheduler saves a log entry after each task, and that save went through the same event as an article save. Sites with the core Scheduled Tasks (session clean-up, update notification) had their whole SiteGround cache purged at every run. Saves in the scheduler, action logs, privacy requests, messages, mail templates, check-in, guided tours and the installer no longer purge anything (installs still purge through their own event).
+- **Purges after admin saves could be lost**: full purges triggered by installs, template saves and list actions (which end in a redirect) now go through the same end-of-request fallback as content purges.
+
+### 📦 New Features
+- **Pages with forms can be cached**: on many Joomla sites every page has a form (a footer newsletter, a login module), and since 2.2.1 those pages were never cached. Now, when every form on a page is one the plugin recognises (Convert Forms, RSForm! Pro, the Joomla login module, or one you list by a marker), the page is cached with the security token taken out. The visitor's browser fetches its own token the first time they use the form, which also starts their session, so the form submits normally. A click or submit that comes before the token has arrived is held for a moment, then replayed. Any other form keeps the page uncached, as before. On by default; turn it off with *Cache Pages with Forms* on the Cache tab. Needs JavaScript in the visitor's browser.
+- **Test my home page**: a button on the status panel fetches the home page and the newest article as an anonymous visitor, twice each, and says whether SiteGround caches them and, if not, why (for example "a form that needs the visitor's session", naming the form).
+- **Recent Uncached Visits**: a status tile shows how many of the last 50 pages rendered for visitors were marked cacheable, with a warning when most were bypassed for one fixable reason. It stores only the time and the reason, never URLs or visitor data.
+- **Home page watchdog**: a scheduled task (*System → Scheduled Tasks → SiteGround Cache: home page watchdog*, added unpublished) fetches the home page, and any other paths you list, every 15 minutes. It works from the web scheduler and from `cli/joomla.php scheduler:run` (the task stores the site's address for that). If one comes back as something other than an HTML page, it purges the SiteGround cache, checks again and emails a report.
+- **Excluded Menu Items**: pick menu items whose pages are never cached.
+- **Better Excluded URLs**: `*` matches any text (`/shop/*/checkout`), a trailing `$` matches that path only (`/about$`), and a `?` matches the query string too (`/search?q=`). Plain paths still match everything that starts with them.
+- **Cacheable Query Parameters**: list parameters such as `start` or `limitstart` to let paginated pages be cached. `format`, `tmpl` and `task` never are, and neither is a URL that mixes a listed parameter with a tracking one.
+- **Excluded User Agents**: pages rendered for user agents containing a listed text (for example a feed reader or an uptime monitor) are never stored in the cache.
+
+### 🔧 Improvements
+- **Purge everything when it matters**: saving the plugin's settings, switching any plugin on or off in the Plugins list (this one included), and installing or updating this plugin all purge the whole SiteGround cache, so nothing cached under old settings or an older version is served on.
+- **One purge per content save**: every content save already purged the whole site (the home page pattern covers every page), and that's deliberate, because modules such as Latest News show articles on every page. The plugin now sends that purge once instead of once per URL.
+- **The toolbar button says which cache it clears**: it's now *Purge SiteGround Cache*, with a tooltip and setting note saying that Joomla's own Clear Cache and optimisers such as JCH Optimize don't clear SiteGround's cache.
+- **File check**: the Cache tab shows whether every installed file matches the released version, and names any that are missing, empty or changed after a failed update.
+
+### 🌐 Languages
+- **All 14 translations are complete again**: every setting and message added since 2.0 had been showing in English outside en-GB. Dutch, German, Spanish, French, Italian, Brazilian Portuguese, Russian, Polish, Japanese, Simplified Chinese, Turkish, Greek, Czech and Swedish now cover all 193 strings, including the toolbar button.
+
+### 📝 Documentation
+- Tests: `tests/run-harness.sh` runs the real plugin class through Joomla's response order for 58 checks (feeds with and without tracking parameters, JSON/raw, `tmpl=component`, 404s, every form case, gzip, exclusions, cookies, visitor sessions, log protection). Not part of the package.
+
 ## 🚀 Version 2.2.2 (October 2026)
 
 ### 🐛 Bug Fixes

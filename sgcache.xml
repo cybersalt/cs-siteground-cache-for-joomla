@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="plugin" group="system" method="upgrade">
     <name>PLG_SYSTEM_SGCACHE</name>
-    <version>2.2.2</version>
+    <version>2.3.0</version>
     <creationDate>2026-06-15</creationDate>
     <author>Cybersalt</author>
     <authorEmail>support@cybersalt.com</authorEmail>
@@ -14,9 +14,11 @@
 
     <files>
         <folder plugin="sgcache">services</folder>
+        <folder>forms</folder>
         <folder>src</folder>
         <folder>tmpl</folder>
         <filename>CHANGELOG.html</filename>
+        <filename>integrity.json</filename>
     </files>
 
     <media destination="plg_system_sgcache" folder="media">
@@ -73,6 +75,14 @@
                 />
 
                 <field
+                    name="integrity"
+                    type="Integrity"
+                    label="PLG_SYSTEM_SGCACHE_FIELD_INTEGRITY_LABEL"
+                    lists="plugins/system/sgcache/integrity.json"
+                    product="PLG_SYSTEM_SGCACHE"
+                />
+
+                <field
                     name="enable_dynamic_cache"
                     type="radio"
                     label="PLG_SYSTEM_SGCACHE_ENABLE_DYNAMIC_CACHE"
@@ -125,6 +135,77 @@
                     multiple="true"
                     layout="joomla.form.field.list-fancy-select"
                     default="com_users,com_finder,com_contact,com_privacy"
+                />
+
+                <field
+                    name="excluded_menu_items"
+                    type="menuitem"
+                    label="PLG_SYSTEM_SGCACHE_EXCLUDED_MENU_ITEMS"
+                    description="PLG_SYSTEM_SGCACHE_EXCLUDED_MENU_ITEMS_DESC"
+                    multiple="true"
+                    layout="joomla.form.field.groupedlist-fancy-select"
+                    client_id="0"
+                />
+
+                <field
+                    name="cacheable_query_params"
+                    type="textarea"
+                    label="PLG_SYSTEM_SGCACHE_CACHEABLE_QUERY_PARAMS"
+                    description="PLG_SYSTEM_SGCACHE_CACHEABLE_QUERY_PARAMS_DESC"
+                    rows="3"
+                    filter="string"
+                />
+
+                <field
+                    name="excluded_user_agents"
+                    type="textarea"
+                    label="PLG_SYSTEM_SGCACHE_EXCLUDED_USER_AGENTS"
+                    description="PLG_SYSTEM_SGCACHE_EXCLUDED_USER_AGENTS_DESC"
+                    rows="3"
+                    filter="string"
+                />
+
+                <field
+                    name="forms_note"
+                    type="note"
+                    label="PLG_SYSTEM_SGCACHE_FORMS_NOTE_LABEL"
+                    description="PLG_SYSTEM_SGCACHE_FORMS_NOTE"
+                />
+
+                <field
+                    name="cache_form_pages"
+                    type="radio"
+                    label="PLG_SYSTEM_SGCACHE_CACHE_FORM_PAGES"
+                    description="PLG_SYSTEM_SGCACHE_CACHE_FORM_PAGES_DESC"
+                    default="1"
+                    class="btn-group"
+                    layout="joomla.form.field.radio.switcher"
+                >
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+
+                <field
+                    name="form_types"
+                    type="checkboxes"
+                    label="PLG_SYSTEM_SGCACHE_FORM_TYPES"
+                    description="PLG_SYSTEM_SGCACHE_FORM_TYPES_DESC"
+                    default="login,rsform,convertforms"
+                    showon="cache_form_pages:1"
+                >
+                    <option value="convertforms">PLG_SYSTEM_SGCACHE_FORM_TYPE_CONVERTFORMS</option>
+                    <option value="rsform">PLG_SYSTEM_SGCACHE_FORM_TYPE_RSFORM</option>
+                    <option value="login">PLG_SYSTEM_SGCACHE_FORM_TYPE_LOGIN</option>
+                </field>
+
+                <field
+                    name="form_markers"
+                    type="textarea"
+                    label="PLG_SYSTEM_SGCACHE_FORM_MARKERS"
+                    description="PLG_SYSTEM_SGCACHE_FORM_MARKERS_DESC"
+                    rows="3"
+                    filter="raw"
+                    showon="cache_form_pages:1"
                 />
             </fieldset>
 
@@ -289,6 +370,13 @@
                     <option value="0">JNO</option>
                     <option value="1">JYES</option>
                 </field>
+
+                <field
+                    name="watchdog_note"
+                    type="note"
+                    label="PLG_SYSTEM_SGCACHE_WATCHDOG_NOTE_LABEL"
+                    description="PLG_SYSTEM_SGCACHE_WATCHDOG_NOTE"
+                />
 
                 <field
                     name="purge_button"

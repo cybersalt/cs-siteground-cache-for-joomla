@@ -10,12 +10,21 @@ namespace Cybersalt\Plugin\System\SgCache;
 
 \defined('_JEXEC') or die;
 
+use Joomla\CMS\Factory;
+
 class Logger
 {
     /**
      * Default log filename.
      */
     private const DEFAULT_FILE = 'sgcache.log';
+
+    /**
+     * First line of every log file. The files end in .php, so a browser
+     * that requests one runs this and gets nothing, like Joomla's own logs.
+     * Readers skip it (it isn't JSON).
+     */
+    public const HEADER = "#<?php die('Forbidden.'); ?>\n";
 
     /**
      * JSON encoding flags.
@@ -68,11 +77,56 @@ class Logger
         self::$requestEntries = [];
         self::$maxSize = $maxSizeMb * 1048576;
 
-        if (empty($logFile)) {
-            self::$logFile = JPATH_ROOT . '/logs/' . self::DEFAULT_FILE;
-        } else {
-            self::$logFile = JPATH_ROOT . '/logs/' . basename($logFile);
+        self::$logFile = self::pathFor($logFile !== '' ? $logFile : self::DEFAULT_FILE);
+    }
+
+    /**
+     * Where a log named $name lives: Joomla's log folder, as <name>.php.
+     * (Before 2.3.0 it was a plain file in /logs under the site root, which
+     * a browser could download.)
+     */
+    public static function pathFor(string $name): string
+    {
+        try {
+            $dir = (string) Factory::getApplication()->get('log_path', JPATH_ADMINISTRATOR . '/logs');
+        } catch (\Throwable $e) {
+            $dir = JPATH_ADMINISTRATOR . '/logs';
         }
+
+        $name = basename($name);
+        if (!str_ends_with(strtolower($name), '.php')) {
+            $name .= '.php';
+        }
+
+        return rtrim($dir, '/\\') . '/' . $name;
+    }
+
+    /**
+     * Append lines to a log file, starting it with the die() header.
+     */
+    public static function append(string $file, string $lines): int|false
+    {
+        $dir = \dirname($file);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+
+        clearstatcache(true, $file);
+        if (!is_file($file) || filesize($file) === 0) {
+            $lines = self::HEADER . $lines;
+        }
+
+        return @file_put_contents($file, $lines, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * A log file's contents without the die() header.
+     */
+    public static function contents(string $file): string
+    {
+        $raw = (string) @file_get_contents($file);
+
+        return str_starts_with($raw, self::HEADER) ? substr($raw, \strlen(self::HEADER)) : $raw;
     }
 
     /**
@@ -110,18 +164,12 @@ class Logger
             return;
         }
 
-        $logDir = \dirname(self::$logFile);
-        if (!is_dir($logDir)) {
-            @mkdir($logDir, 0755, true);
-        }
-
         // Auto-rotate if file is too large
         if (is_file(self::$logFile) && filesize(self::$logFile) > self::$maxSize) {
             self::rotate();
         }
 
-        $line = json_encode($entry, self::JSON_FLAGS) . "\n";
-        @file_put_contents(self::$logFile, $line, FILE_APPEND | LOCK_EX);
+        self::append(self::$logFile, json_encode($entry, self::JSON_FLAGS) . "\n");
     }
 
     /**
@@ -193,7 +241,7 @@ class Logger
             return ['entries' => [], 'total' => 0, 'offset' => 0, 'limit' => $limit];
         }
 
-        $raw = file_get_contents(self::$logFile);
+        $raw = self::contents(self::$logFile);
         if (empty($raw)) {
             return ['entries' => [], 'total' => 0, 'offset' => 0, 'limit' => $limit];
         }
@@ -255,7 +303,7 @@ class Logger
         $stats['file_size'] = filesize(self::$logFile);
         $stats['file_size_human'] = self::humanSize($stats['file_size']);
 
-        $raw = file_get_contents(self::$logFile);
+        $raw = self::contents(self::$logFile);
         if (empty($raw)) {
             return $stats;
         }
@@ -370,7 +418,7 @@ class Logger
                 'data'       => ['message' => 'Logging system test'],
             ], self::JSON_FLAGS) . "\n";
 
-            $bytes = @file_put_contents(self::$logFile, $testEntry, FILE_APPEND | LOCK_EX);
+            $bytes = self::append(self::$logFile, $testEntry);
 
             if ($bytes !== false && $bytes > 0) {
                 $result['write_test'] = true;
@@ -390,13 +438,14 @@ class Logger
      */
     private static function rotate(): void
     {
-        $rotated = self::$logFile . '.' . date('Y-m-d-His');
+        // Rotated files keep the .php ending (and the header) so they stay
+        // unreadable from a browser too.
+        $stem    = substr(self::$logFile, 0, -4);
+        $rotated = $stem . '-' . date('Y-m-d-His') . '.php';
         @rename(self::$logFile, $rotated);
 
         // Clean up old rotated files (keep last 5)
-        $dir = \dirname(self::$logFile);
-        $base = basename(self::$logFile);
-        $rotatedFiles = glob($dir . '/' . $base . '.*');
+        $rotatedFiles = glob($stem . '-[0-9][0-9][0-9][0-9]-*.php');
 
         if ($rotatedFiles && \count($rotatedFiles) > 5) {
             sort($rotatedFiles);

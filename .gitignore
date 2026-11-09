@@ -1,1 +1,5 @@
 *.zip
+integrity.json
+tests/harness/root/
+tests/harness/server.log
+.playwright-mcp/

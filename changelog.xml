@@ -19,6 +19,43 @@
         <element>sgcache</element>
         <type>plugin</type>
         <folder>system</folder>
+        <version>2.3.0</version>
+        <security>
+            <item>Cached pages never carry anything of one visitor's: a page is only stored when it was rendered for a visitor who arrived without a Joomla session cookie (so no cart, refilled form or other session content reaches the shared copy), and pages showing a queued message or the visitor's IP address are never cached. Every visitor is still served the stored copy.</item>
+            <item>No visitor's form token in a cached page: token inputs on cached pages are replaced by a placeholder and the token in Joomla's script options (csrf.token) is emptied; each visitor's browser fetches its own token when they use a form.</item>
+            <item>The log can't be downloaded any more: it was a plain file in /logs under the site root (visited URLs with verbose logging on). It is now sgcache.log.php in Joomla's log folder, starting with a line that stops a browser reading it, as are rotated copies and the new dashboard bookkeeping (times and reason codes only). Updating moves existing entries and deletes the old file; uninstalling removes both.</item>
+        </security>
+        <fix>
+            <item>A feed could be cached and served as the home page: any cookie-free response was marked cacheable, including RSS/Atom feeds, JSON, raw output and error pages. A crawler's /?fbclid=...&amp;format=feed was stored by SiteGround under the home page. Only a normal HTML page with HTTP status 200 is marked cacheable now (issue #3).</item>
+            <item>Pages with query parameters are no longer cached, except for marketing tracking parameters (utm_*, fbclid, gclid, msclkid and similar), which don't change the page.</item>
+            <item>Form detection failed with Joomla's Gzip Page Compression on, so pages with forms were cached with one visitor's token and their forms failed for everyone else. The plugin now checks the decompressed page.</item>
+            <item>Joomla 6: the header purge dropdown showed an empty pill with no caret (issue #2).</item>
+            <item>The Cache Daemon status tile said Reachable after only checking that the log could be written; it now connects to SiteGround's cache socket.</item>
+            <item>Every scheduled task run purged the whole cache: the scheduler's log save went through the same event as an article save. Saves in the scheduler, action logs, privacy requests, messages, mail templates, check-in, guided tours and the installer no longer purge anything.</item>
+            <item>Full purges triggered by installs, template saves and list actions (which end in a redirect) could be lost; they now use the end-of-request fallback too.</item>
+        </fix>
+        <addition>
+            <item>Pages with forms can be cached: when every form on a page is Convert Forms, RSForm! Pro, the Joomla login module or one listed by marker, the page is cached with the token taken out and the visitor's browser fetches its own token when they use the form. Other forms keep the page uncached. Setting: Cache Pages with Forms (on by default).</item>
+            <item>Test my home page: a status-panel button fetches the home page and newest article as a visitor and says whether SiteGround caches them, and if not, why.</item>
+            <item>Recent Uncached Visits tile, with a warning when most pages are bypassed for one fixable reason. Stores only time and reason, never URLs or visitor data.</item>
+            <item>Home page watchdog scheduled task (added unpublished): fetches the home page every 15 minutes; if it isn't an HTML page, purges the cache, checks again and emails a report.</item>
+            <item>Excluded Menu Items, Excluded User Agents and Cacheable Query Parameters settings. Excluded URLs now support * wildcards, a trailing $ for an exact path, and ? to match the query string.</item>
+            <item>File check on the Cache tab: shows whether every installed file matches the released version.</item>
+        </addition>
+        <change>
+            <item>Saving the plugin's settings, switching any plugin on or off in the Plugins list, and installing or updating this plugin purge the whole SiteGround cache.</item>
+            <item>A content save sends one full purge instead of one per URL (it always covered the whole site, deliberately, so modules listing articles stay fresh).</item>
+            <item>The toolbar button is now "Purge SiteGround Cache", with a note that Joomla's own Clear Cache and optimisers such as JCH Optimize don't clear SiteGround's cache.</item>
+        </change>
+        <language>
+            <item>All 14 translations complete again: every setting and message added since 2.0 (193 strings) is now translated in Dutch, German, Spanish, French, Italian, Brazilian Portuguese, Russian, Polish, Japanese, Simplified Chinese, Turkish, Greek, Czech and Swedish.</item>
+        </language>
+    </changelog>
+
+    <changelog>
+        <element>sgcache</element>
+        <type>plugin</type>
+        <folder>system</folder>
         <version>2.2.2</version>
         <fix>
             <item>Default excluded components were ignored on new installs: a fresh install stores the default list (com_users, com_finder, com_contact, com_privacy) as one comma-separated value, but the plugin only split the list on line breaks, so none of the four was actually excluded. The list is now read correctly, and the Excluded Components field shows the four defaults as selected.</item>

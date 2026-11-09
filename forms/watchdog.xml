@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form>
+    <fields name="params">
+        <fieldset name="task_params">
+            <field
+                name="site_url"
+                type="url"
+                label="PLG_SYSTEM_SGCACHE_TASK_WATCHDOG_SITE_URL_LABEL"
+                description="PLG_SYSTEM_SGCACHE_TASK_WATCHDOG_SITE_URL_DESC"
+                validate="url"
+                schemes="http,https"
+                filter="url"
+            />
+            <field
+                name="notify_email"
+                type="email"
+                label="PLG_SYSTEM_SGCACHE_TASK_WATCHDOG_NOTIFY_EMAIL_LABEL"
+                description="PLG_SYSTEM_SGCACHE_TASK_WATCHDOG_NOTIFY_EMAIL_DESC"
+                validate="email"
+                filter="string"
+            />
+            <field
+                name="extra_paths"
+                type="textarea"
+                label="PLG_SYSTEM_SGCACHE_TASK_WATCHDOG_EXTRA_PATHS_LABEL"
+                description="PLG_SYSTEM_SGCACHE_TASK_WATCHDOG_EXTRA_PATHS_DESC"
+                rows="4"
+                filter="string"
+            />
+        </fieldset>
+    </fields>
+</form>

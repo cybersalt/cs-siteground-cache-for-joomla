@@ -41,6 +41,26 @@ class SiteToolsClient
     }
 
     /**
+     * Whether the caching daemon's socket accepts a connection. Sends
+     * nothing.
+     */
+    public static function canConnect(): bool
+    {
+        if (!self::isSiteGround()) {
+            return false;
+        }
+
+        $fp = @stream_socket_client('unix://' . self::SOCKET_PATH, $errno, $errstr, 3);
+        if ($fp === false) {
+            return false;
+        }
+
+        fclose($fp);
+
+        return true;
+    }
+
+    /**
      * Flush the dynamic cache for a given hostname and path pattern.
      *
      * @param string $hostname  The site hostname (without www.)
