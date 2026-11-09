@@ -21,14 +21,13 @@
         <folder>system</folder>
         <version>2.3.0</version>
         <security>
-            <item>Cached pages never carry anything of one visitor's: a page is only stored when it was rendered for a visitor who arrived without a Joomla session cookie (so no cart, refilled form or other session content reaches the shared copy), and pages showing a queued message or the visitor's IP address are never cached. Every visitor is still served the stored copy.</item>
-            <item>No visitor's form token in a cached page: token inputs on cached pages are replaced by a placeholder and the token in Joomla's script options (csrf.token) is emptied; each visitor's browser fetches its own token when they use a form.</item>
-            <item>The log can't be downloaded any more: it was a plain file in /logs under the site root (visited URLs with verbose logging on). It is now sgcache.log.php in Joomla's log folder, starting with a line that stops a browser reading it, as are rotated copies and the new dashboard bookkeeping (times and reason codes only). Updating moves existing entries and deletes the old file; uninstalling removes both.</item>
+            <item>Security hardening of cached pages: nothing tied to an individual visitor, including form security tokens, is shared with other visitors.</item>
+            <item>Security hardening of the plugin's log files, which now use the same protection as Joomla's own logs in Joomla's log folder. Updating moves existing entries; uninstalling removes them.</item>
         </security>
         <fix>
             <item>A feed could be cached and served as the home page: any cookie-free response was marked cacheable, including RSS/Atom feeds, JSON, raw output and error pages. A crawler's /?fbclid=...&amp;format=feed was stored by SiteGround under the home page. Only a normal HTML page with HTTP status 200 is marked cacheable now (issue #3).</item>
             <item>Pages with query parameters are no longer cached, except for marketing tracking parameters (utm_*, fbclid, gclid, msclkid and similar), which don't change the page.</item>
-            <item>Form detection failed with Joomla's Gzip Page Compression on, so pages with forms were cached with one visitor's token and their forms failed for everyone else. The plugin now checks the decompressed page.</item>
+            <item>Form detection with Joomla's Gzip Page Compression on: pages with forms weren't recognised, so those forms could fail. The plugin now checks the decompressed page.</item>
             <item>Joomla 6: the header purge dropdown showed an empty pill with no caret (issue #2).</item>
             <item>The Cache Daemon status tile said Reachable after only checking that the log could be written; it now connects to SiteGround's cache socket.</item>
             <item>Every scheduled task run purged the whole cache: the scheduler's log save went through the same event as an article save. Saves in the scheduler, action logs, privacy requests, messages, mail templates, check-in, guided tours and the installer no longer purge anything.</item>
