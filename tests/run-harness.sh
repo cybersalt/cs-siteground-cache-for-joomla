@@ -7,8 +7,9 @@
 # Each row: what the visitor asked for, the expected X-Cache-Enabled, what
 # came back, and the extras that matter (cookie, content type, punched form).
 cd "$(dirname "$0")/harness" || exit 1
-rm -rf root
-php -d session.save_path="$(pwd)" -S 127.0.0.1:8187 router.php > server.log 2>&1 &
+rm -rf root sess_*
+mkdir -p root/sessions
+php -d session.save_path="$(pwd)/root/sessions" -S 127.0.0.1:8187 router.php > server.log 2>&1 &
 PID=$!
 trap 'kill $PID 2>/dev/null' EXIT
 for _ in $(seq 1 20); do curl -s -o /dev/null http://127.0.0.1:8187/ && break; sleep 0.2; done
